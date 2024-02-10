@@ -37,6 +37,6 @@ AppDataSource.initialize()
     })
 
 })
-.catch((err)=>{
-    console.log('db not connected',err)
+.catch(()=>{
+    console.log('db not connected')
 })
