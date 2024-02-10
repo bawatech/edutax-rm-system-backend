@@ -5,7 +5,7 @@ import { User } from "./entites/User";
 import { AppDataSource } from "./AppDataSource";
 import { createUser } from "./contollers/user.controller";
 const app = express();
-import userRoutes from './routes/user.rotues'
+import userRoutes from './routes/user.routes'
 import authRoutes from './routes/auth.routes'
 app.use(express.json());
 const port = 3011
