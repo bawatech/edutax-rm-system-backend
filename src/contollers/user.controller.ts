@@ -9,9 +9,7 @@ export const createUser = async (req: Request, res: Response) => {
   
     // Create a new user instance
     const user = new User();
-    user.firstName = name;
     user.email = email;
-    user.lastName = password;
   
     // Save the user to the database using TypeORM
     try {

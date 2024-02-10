@@ -6,8 +6,9 @@ import { AppDataSource } from "./AppDataSource";
 import { createUser } from "./contollers/user.controller";
 const app = express();
 import userRoutes from './routes/user.rotues'
+import authRoutes from './routes/auth.routes'
 app.use(express.json());
-const port = 3008;
+const port = 3011
 
 
 
@@ -25,6 +26,7 @@ AppDataSource.initialize()
 //  })
 
  app.use('/user',userRoutes)
+ app.use('/auth',authRoutes)
 //  app.post('/user',createUser);
  
   
