@@ -14,13 +14,6 @@ export const signUp = async (req: Request, res: Response) => {
   user.password = password;
 
   try {
-    // Validate email format and password length
-    // const emailErrors = await validate(user, { skipMissingProperties: true });
-    // if (emailErrors.length > 0) {
-    //   const emailErrorMessages = emailErrors.map(error => error.constraints ? Object.values(error.constraints) : []).flat();
-    //   return res.status(400).json({ message: 'Invalid email format', errors: emailErrorMessages });
-    // }
-
     // Validate the User object
     const userErrors = await validate(user);
     if (userErrors.length > 0) {
