@@ -3,7 +3,7 @@ import { Length, IsDate, IsInt, IsAlphanumeric, IsPostalCode, ValidateIf, Matche
 import { isValidPhoneNumber } from 'libphonenumber-js';
 
 @Entity()
-export class Returns {
+export class Taxfile {
     @PrimaryGeneratedColumn()
     id: number;
 
