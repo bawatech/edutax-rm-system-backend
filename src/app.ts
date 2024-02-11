@@ -4,6 +4,7 @@ import { AppDataSource } from "./AppDataSource";
 const app = express();
 import userRoutes from './routes/user.routes'
 import authRoutes from './routes/auth.routes'
+import executiveRoutes from './routes/executive.routes'
 app.use(express.json());
 const port = process.env.APP_PORT;
 AppDataSource.initialize()
@@ -11,7 +12,7 @@ AppDataSource.initialize()
 
         app.use('/user', userRoutes)
         app.use('/auth', authRoutes)
-
+        app.use('/executive',executiveRoutes)
         app.listen(port, () => {
             console.log(`App working on ${port}`)
         })

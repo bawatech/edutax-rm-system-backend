@@ -1,23 +1,19 @@
+
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
-import { IsEmail, Length } from "class-validator";
-import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 
 @Entity()
-export class User {
+export class ExecutiveLog {
     @PrimaryGeneratedColumn()
-    id: number
+    id: number;
 
     @Column()
-    @Length(8, 20, { message: 'Password must be between 8 and 20 characters long' })
-    password: string
+    executive_id_fk: number;
 
     @Column()
-    @IsEmail()
-    @IsUniqueUser()
-    email: string;
+    key: string;
 
-    @Column()
-    age: number;
+    @Column({ length: 10 })
+    privs: string;
 
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })
     id_status: string;
@@ -26,11 +22,8 @@ export class User {
     is_deleted: boolean;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    created_on: Date;
+    added_on: Date;
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     deleted_on: Date | null;
-
-
-
 }
