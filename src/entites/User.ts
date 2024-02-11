@@ -1,5 +1,6 @@
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
 import { IsEmail, Length } from "class-validator";
+import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 
 @Entity()
 export class User {
@@ -12,6 +13,7 @@ export class User {
 
     @Column()
     @IsEmail()
+    @IsUniqueUser()
     email: string;
 
     @Column()
