@@ -42,13 +42,13 @@ export class Taxfile {
     mobile_number: string;
 
     @Column({ default: 'NEW_REQUEST' })
-    status: string;
+    file_status: string;
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
-    status_updated_on: Date | null;
+    file_status_updated_on: Date | null;
 
     @Column()
-    status_updated_by: number;
+    file_status_updated_by: number;
 
 
     @Column({ type: "int" })

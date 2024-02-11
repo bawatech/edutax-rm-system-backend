@@ -10,14 +10,14 @@ export class TaxfileStatusLog {
     taxfile_id_fk: number;
 
     @Column()
-    last_status: string;
+    last_file_status: string;
 
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
-    last_status_updated_on: Date | null;
+    last_file_status_updated_on: Date | null;
 
     @Column()
-    last_status_updated_by: number;
+    last_file_status_updated_by: number;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     added_on: Date;

@@ -44,11 +44,10 @@ export const login = async (req: Request, res: Response) => {
     const userLog = new UserLog();
     userLog.user_id_fk = user.id;
     userLog.key = token;
-    userLog.id_status = 'ACT';
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
 
-    return sendSuccess(res,"Signed up successfully",{token});
+    return sendSuccess(res,"LoggedIn successfully",{token});
   } catch (e) {
     return handleCatch(res,e);
   }

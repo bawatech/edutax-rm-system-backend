@@ -1,0 +1,20 @@
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+
+@Entity({ name: "documents" })
+export class Documents {
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    taxfile_id_fk: number;
+
+    @Column()
+    type_id_fk: number;
+
+    @Column()
+    filename: string;
+
+    @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+    created_on: Date;
+
+}

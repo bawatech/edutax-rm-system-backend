@@ -82,14 +82,24 @@ export const addExecutive = async (req: Request, res: Response) => {
 };
 
 export const updateTaxfileStatus = async (req: Request, res: Response) => {
-  const { id, status } = req.body;
+  const { id, file_status, token } = req.body;
 
   try {
 
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
 
-    // Find the existing taxfile record by ID
+    const executiveLogRepo = AppDataSource.getRepository(ExecutiveLog);
+    const executiveLog = await executiveLogRepo.findOne({ where: { key: token, is_deleted: false } });
+    if (!executiveLog) {
+      return res.status(400).json({ message: 'Invalid token or token expired' });
+    }
+
+    const executiveId = executiveLog.executive_id_fk;
+
     const statusRepository = AppDataSource.getRepository(TaxfileStatus);
-    const taxfileStatus = await statusRepository.findOne({ where: { code: status } });
+    const taxfileStatus = await statusRepository.findOne({ where: { code: file_status } });
     if (!taxfileStatus) {
       return res.status(400).json({ message: 'Wrong Taxfile Status' });
     }
@@ -101,22 +111,23 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Taxfile not found' });
     }
 
-    const oldStatus = taxfile.status;
-    const oldStatusUpdatedBy = taxfile.status_updated_by;
-    const oldStatusUpdatedOn = taxfile.status_updated_on;
+    const oldStatus = taxfile.file_status;
+    const oldStatusUpdatedBy = taxfile.file_status_updated_by;
+    const oldStatusUpdatedOn = taxfile.file_status_updated_on;
 
     const taxfileStatusLog = new TaxfileStatusLog();
     taxfileStatusLog.taxfile_id_fk = id;
-    taxfileStatusLog.last_status = oldStatus;
-    taxfileStatusLog.last_status_updated_by = oldStatusUpdatedBy;
-    taxfileStatusLog.last_status_updated_on = oldStatusUpdatedOn;
+    taxfileStatusLog.last_file_status = oldStatus;
+    taxfileStatusLog.last_file_status_updated_by = oldStatusUpdatedBy;
+    taxfileStatusLog.last_file_status_updated_on = oldStatusUpdatedOn;
 
-    // const statusLogRepository = AppDataSource.getRepository(taxfileStatusLog);
-    // await statusLogRepository.save(taxfileStatusLog);
+    const statusLogRepository = AppDataSource.getRepository(TaxfileStatusLog);
+    await statusLogRepository.save(taxfileStatusLog);
 
 
-    taxfile.status = status; //update with new status
-
+    taxfile.file_status = file_status; //update with new status
+    taxfile.file_status_updated_by = executiveId;
+    
     const returnErrors = await validate(taxfile);
     if (returnErrors.length > 0) {
       const errorMessages = returnErrors.map(error => {
