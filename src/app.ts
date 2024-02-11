@@ -7,6 +7,7 @@ import { createUser } from "./contollers/user.controller";
 const app = express();
 import userRoutes from './routes/user.routes'
 import authRoutes from './routes/auth.routes'
+import executiveRoutes from './routes/executive.routes'
 app.use(express.json());
 const port = 3011
 
@@ -27,6 +28,7 @@ AppDataSource.initialize()
 
  app.use('/user',userRoutes)
  app.use('/auth',authRoutes)
+ app.use('/executive',executiveRoutes)
 //  app.post('/user',createUser);
  
   

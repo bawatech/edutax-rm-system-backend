@@ -3,7 +3,7 @@ import { User } from '../entites/User';
 import { UserLog } from '../entites/UserLog';
 import { AppDataSource } from '../AppDataSource';
 import { v4 as uuidv4 } from 'uuid';
-import { validate, validateOrReject, Contains, IsInt, Length, IsEmail, IsFQDN, IsDate, Min, Max } from 'class-validator';
+import { validate} from 'class-validator';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -62,10 +62,9 @@ export const login = async (req: Request, res: Response) => {
     const token = uuidv4();
 
     const userLog = new UserLog();
-    userLog.ulog_user_id_fk = user.id;
-    userLog.ulog_key = token;
+    userLog.user_id_fk = user.id;
+    userLog.key = token;
     //userLog.ulog_privs = 'ADMIN';
-    userLog.ulog_id_status = 'ACT';
 
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);

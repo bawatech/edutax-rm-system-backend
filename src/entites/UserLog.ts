@@ -1,25 +1,31 @@
+
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class UserLog {
     @PrimaryGeneratedColumn()
-    ulog_id: number;
+    id: number;
 
     @Column()
-    ulog_user_id_fk: number;
+    user_id_fk: number;
 
     @Column()
-    ulog_key: string;
+    key: string;
 
     @Column({ length: 10 })
-    ulog_privs: string;
+    privs: string;
 
-    @Column({ length: 3 })
-    ulog_id_status: string;
+    @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })
+    id_status: string;
+
+    @Column({ type: 'boolean', default: false })
+    is_deleted: boolean;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    ulog_added_on: Date;
+    added_on: Date;
 
-    @UpdateDateColumn({ type: "timestamp", nullable: true })
-    ulog_deleted_on: Date | null;
+    @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
+    deleted_on: Date | null;
+
+
 }

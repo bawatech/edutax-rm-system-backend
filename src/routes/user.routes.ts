@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { profile } from "../contollers/user.controller";
+import { addTaxfile, updateTaxfile } from "../contollers/user.controller";
 
 
 const router = Router();
@@ -9,6 +9,7 @@ router.route("/").post((req, res) => {
         { message: 'routes workgin ok' }
     )
 });
-router.route("/profile").post(profile);
+router.route("/add-taxfile").post(addTaxfile);
+router.route("/update-taxfile").post(updateTaxfile);
 
 export default router
