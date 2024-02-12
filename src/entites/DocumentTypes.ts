@@ -8,7 +8,7 @@ export class DocumentTypes {
     @Column()
     code: string;
 
-    @Column({ length: 255 })
-    name: string;
+    @Column()
+    user_id_fk: number;
 
 }

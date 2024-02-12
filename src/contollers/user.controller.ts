@@ -7,6 +7,8 @@ import { UserLog } from '../entites/UserLog';
 import { Documents } from '../entites/Documents';
 import fs from "fs";
 import path from "path";
+import { Messages } from '../entites/messages';
+import { handleCatch, requestDataValidation, sendSuccess } from '../utils/responseHanlder';
 
 
 
@@ -22,9 +24,8 @@ export const createUser = async (req: Request, res: Response) => {
     await userRepository.save(user);
 
     res.status(201).json({ message: 'User created', user });
-  } catch (error) {
-
-    res.status(400).json({ message: 'Something went wrong', error });
+  } catch (e) {
+    return handleCatch(res, e);
   }
 };
 
@@ -65,27 +66,14 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.mobile_number = mobile_number;
     taxfile.created_by = userId;
 
-
-    const returnErrors = await validate(taxfile);
-    if (returnErrors.length > 0) {
-      const errorMessages = returnErrors.map(error => {
-        if (error.constraints) {
-          return Object.values(error.constraints);
-        }
-        return [];
-      }).flat();
-      return res.status(400).json({ message: 'Invalid taxfile data', errors: errorMessages });
-    }
-
+    await requestDataValidation(taxfile)
 
     const returnsRepository = AppDataSource.getRepository(Taxfile);
     await returnsRepository.save(taxfile);
 
     res.status(201).json({ message: 'Profile created successfully', taxfile });
-  } catch (error) {
-
-    console.error('Error during taxfile creation:', error);
-    res.status(400).json({ message: 'Something went wrong', error });
+  } catch (e) {
+    return handleCatch(res, e);
   }
 };
 
@@ -127,112 +115,142 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     taxfile.mobile_number = mobile_number;
     taxfile.updated_by = userId;
 
-    // Validate updated taxfile data
-    const returnErrors = await validate(taxfile);
-    if (returnErrors.length > 0) {
-      const errorMessages = returnErrors.map(error => {
-        if (error.constraints) {
-          return Object.values(error.constraints);
-        }
-        return [];
-      }).flat();
-      return res.status(400).json({ message: 'Invalid taxfile data', errors: errorMessages });
-    }
+    await requestDataValidation(taxfile)
 
-    // Save the updated taxfile record
     await returnsRepository.save(taxfile);
 
     res.status(200).json({ message: 'Taxfile updated successfully', taxfile });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+
+export const uploadDocuments = async (req: Request, res: Response) => {
+
+  try {
+    const { taxfileId, documents } = req.body;
+
+    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+    if (!taxfileId) {
+      return res.status(400).json({ message: 'Taxfile ID is required' });
+    }
+    if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
+      return res.status(400).json({ message: 'Files are required' });
+    }
+
+    const documentRepository = AppDataSource.getRepository(Documents);
+
+
+    for (let i = 0; i < documents.length; i++) {
+      const file = files[i];
+      const typeId = documents[i]['typeid'];
+      const document = new Documents();
+      document.taxfile_id_fk = taxfileId;
+      document.type_id_fk = typeId;
+      let file_name = file.originalname;
+      document.filename = file_name;
+
+      const saveDocument = await documentRepository.save(document);
+      if (!saveDocument) {
+        fs.unlinkSync(path.join(__dirname, '..', 'uploads', file_name));
+      }
+    }
+
+    res.status(201).json({ message: 'Documents added successfully' });
   } catch (error) {
-    console.error('Error during taxfile update:', error);
+    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+    for (const file of files) {
+      fs.unlinkSync(path.join(__dirname, '..', 'uploads', file.originalname));
+    }
+
+    console.error('Error during taxfiles addition:', error);
     res.status(500).json({ message: 'Something went wrong', error });
   }
 };
 
 
-// export const uploadDocuments = async (req: Request, res: Response) => {
-//   try {
-//     const { taxfileId,typeIds } = req.body; // Assuming you receive the taxfile ID in the request body
-//     const files = req.files as Express.Multer.File[];
-
-//     if (!taxfileId || !typeIds || typeIds.length !== files.length || files.length === 0) {
-//       return res.status(400).json({ message: 'Taxfile ID, type IDs, and files are required' });
-//     }
-
-//     const documentRepository = AppDataSource.getRepository(Documents);
-
-//     // // Iterate over each file and save it to the database
-//     // for (const file of files) {
-//     //   const document = new Documents();
-//     //   document.taxfile_id_fk = taxfileId;
-//     //   document.filename = file.originalname;
-//     //   await documentRepository.save(document);
-//     // }
-//     // Iterate over each file and save it to the database
-//     for (let i = 0; i < files.length; i++) {
-//       const file = files[i];
-//       const typeId = typeIds[i];
-//       const document = new Documents();
-//       document.taxfile_id_fk = taxfileId;
-//       document.type_id_fk = typeId; // Set the type ID for the document
-//       document.filename = file.originalname;
-//       await documentRepository.save(document);
-//     }
-
-//     res.status(201).json({ message: 'Documents added successfully' });
-//   } catch (error) {
-
-//     // If an error occurs during database operations, delete uploaded files
-//     const files = req.files as Express.Multer.File[];
-//     for (const file of files) {
-//       fs.unlinkSync(path.join(__dirname, '..', 'uploads', file.filename));
-//     }
-
-//     console.error('Error during taxfiles addition:', error);
-//     res.status(500).json({ message: 'Something went wrong', error });
-
-//   }
-// };
-
-export const uploadDocuments = async (req: Request, res: Response) => {
-  console.log("rrrrrrr",req.body);
-
+export const addClientMessage = async (req: Request, res: Response) => {
+  const { token, message, taxfile_id } = req.body;
   try {
-    const { taxfileId } = req.body;
-    for (let i = 0; i < req.body.documents.length; i++) {
-      console.log("mmmmmmmmmmmm",req.body.documents[i]['typeid'])
-    }
-   
-    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
-    const typeIds: number[] = req.body.typeIds;
 
-    // if (!taxfileId || !files || !typeIds || files.length !== typeIds.length || files.length === 0) {
-    //   return res.status(400).json({ message: 'Taxfile ID, type IDs, and files are required' });
-    // }
-
-    const documentRepository = AppDataSource.getRepository(Documents);
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const typeId = typeIds[i];
-
-      const document = new Documents();
-      document.taxfile_id_fk = taxfileId;
-      document.type_id_fk = typeId;
-      document.filename = file.originalname;
-
-      await documentRepository.save(document);
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
     }
 
-    res.status(201).json({ message: 'Documents added successfully' });
-  } catch (error) {
-    // If an error occurs during database operations, delete uploaded files
-    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
-    for (const file of files) {
-      fs.unlinkSync(path.join(__dirname, '..', 'uploads', file.filename));
+    const userLogRepository = AppDataSource.getRepository(UserLog);
+    const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+    if (!userLog) {
+      return res.status(400).json({ message: 'Invalid token or token expired' });
     }
 
-    console.error('Error during taxfiles addition:', error);
-    res.status(500).json({ message: 'Something went wrong', error });
+    const userId = userLog.user_id_fk;
+
+    const taxfileRepository = AppDataSource.getRepository(Taxfile);
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, created_by: userId } });
+
+    if (!taxfile) {
+      return res.status(400).json({ message: 'Taxfile not found or not associated with the user' });
+    }
+
+    const msgRepo = AppDataSource.getRepository(Messages);
+    const msgTab = new Messages();
+    msgTab.taxfile_id_fk = taxfile_id;
+    msgTab.message = message;
+    msgTab.category = "GENERAL";
+    msgTab.user_type = "CLIENT";
+    msgTab.added_by = userId;
+
+    await requestDataValidation(msgTab);
+
+    await msgRepo.save(msgTab);
+    return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const getClientMessages = async (req: Request, res: Response) => {
+  const { token, taxfile_id } = req.body;
+  try {
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+
+    const userLogRepository = AppDataSource.getRepository(UserLog);
+    const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+
+    if (!userLog) {
+      return res.status(400).json({ message: 'Invalid token or token expired' });
+    }
+
+    const userId = userLog.user_id_fk;
+
+    const taxfileRepository = AppDataSource.getRepository(Taxfile);
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, created_by: userId } });
+
+    if (!taxfile) {
+      return res.status(400).json({ message: 'Taxfile not found or not associated with the user' });
+    }
+
+    const messageRepository = AppDataSource.getRepository(Messages);
+    const messages = await messageRepository.find({
+      where: { taxfile_id_fk: taxfile_id }
+    });
+
+    // // Get repository for Messages
+    // const messageRepository = AppDataSource.getRepository(Messages);
+    // const messages = await messageRepository.createQueryBuilder('message')
+    //   .leftJoinAndSelect('message.executive', 'executive', 'message.user_type = :user_type AND message.added_by = executive.id', { user_type: 'EXECUTIVE' })
+    //   .addSelect('executive.email')
+    //   .where('message.taxfile_id_fk = :taxfileId', { taxfileId: taxfile_id })
+    //   .getMany();
+
+    return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
   }
 };

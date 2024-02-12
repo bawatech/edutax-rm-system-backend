@@ -19,6 +19,12 @@ export class User {
     @Column()
     age: number;
 
+    @Column()
+    otp: string;
+
+    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED'] })
+    verify_status: string;
+
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })
     id_status: string;
 

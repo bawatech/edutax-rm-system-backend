@@ -7,6 +7,9 @@ import { validate } from 'class-validator';
 import { Taxfile } from '../entites/Taxfile';
 import { TaxfileStatus } from '../entites/TaxfileStatus';
 import { TaxfileStatusLog } from '../entites/TaxfileStatusLog';
+import { UserLog } from '../entites/UserLog';
+import { Messages } from '../entites/messages';
+import { handleCatch, requestDataValidation, sendSuccess } from '../utils/responseHanlder';
 
 
 
@@ -36,9 +39,8 @@ export const login = async (req: Request, res: Response) => {
     await userLogRepository.save(executiveLog);
 
     res.status(200).json({ message: 'Login successful', token });
-  } catch (error) {
-    console.error('Error during login:', error);
-    res.status(400).json({ message: 'Something went wrong', error });
+  } catch (e) {
+    return handleCatch(res, e);
   }
 };
 
@@ -75,9 +77,8 @@ export const addExecutive = async (req: Request, res: Response) => {
     await executiveRepository.save(executive);
 
     res.status(201).json({ message: 'Executive Added successfully', executive });
-  } catch (error) {
-    console.error('Error during process:', error);
-    res.status(400).json({ message: 'Something went wrong', error });
+  } catch (e) {
+    return handleCatch(res, e);
   }
 };
 
@@ -127,24 +128,82 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
 
     taxfile.file_status = file_status; //update with new status
     taxfile.file_status_updated_by = executiveId;
-    
-    const returnErrors = await validate(taxfile);
-    if (returnErrors.length > 0) {
-      const errorMessages = returnErrors.map(error => {
-        if (error.constraints) {
-          return Object.values(error.constraints);
-        }
-        return [];
-      }).flat();
-      return res.status(400).json({ message: 'Invalid taxfile data', errors: errorMessages });
-    }
+
+    await requestDataValidation(taxfile)
 
     // Save the updated taxfile record
     await taxfileRepository.save(taxfile);
 
     res.status(200).json({ message: 'Taxfile Status updated successfully', taxfile });
-  } catch (error) {
-    console.error('Error during taxfile update:', error);
-    res.status(500).json({ message: 'Something went wrong', error });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const addExecutiveMessage = async (req: Request, res: Response) => {
+  const { token, message, taxfile_id, category } = req.body;
+  try {
+
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+
+    const executiveLogRepository = AppDataSource.getRepository(ExecutiveLog);
+    const executiveLog = await executiveLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+    if (!executiveLog) {
+      return res.status(400).json({ message: 'Invalid token or token expired' });
+    }
+
+    const executiveId = executiveLog.executive_id_fk;
+
+    const msgRepo = AppDataSource.getRepository(Messages);
+    const msgTab = new Messages();
+    msgTab.taxfile_id_fk = taxfile_id;
+    msgTab.message = message;
+    msgTab.category = category;
+    msgTab.user_type = "EXECUTIVE";
+    msgTab.added_by = executiveId;
+
+    await requestDataValidation(msgTab);
+
+    await msgRepo.save(msgTab);
+    return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const getExecutiveMessages = async (req: Request, res: Response) => {
+  const { token, taxfile_id } = req.body;
+  try {
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+
+    const executiveLogRepository = AppDataSource.getRepository(ExecutiveLog);
+    const executiveLog = await executiveLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+    if (!executiveLog) {
+      return res.status(400).json({ message: 'Invalid token or token expired' });
+    }
+
+    const executiveId = executiveLog.executive_id_fk;
+
+    const taxfileRepository = AppDataSource.getRepository(Taxfile);
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id } });
+
+    if (!taxfile) {
+      return res.status(400).json({ message: 'Taxfile not found or not associated with the user' });
+    }
+
+    const messageRepository = AppDataSource.getRepository(Messages);
+    const messages = await messageRepository.find({
+      where: { taxfile_id_fk: taxfile_id }
+    });
+
+    return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
   }
 };
