@@ -5,7 +5,7 @@ import { UserLog } from "../entites/UserLog";
 declare global {
     namespace Express {
         interface Request {
-            userId?: string;
+            userId?: any;
         }
     }
 }
@@ -36,7 +36,9 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
             return res.status(401).json({ message: "Invalid token." });
         }
 
-        (req as any).userId = userLog.user_id_fk;
+        const userId = userLog.user_id_fk;
+
+        (req as any).userId = userId;
         next();
     } catch (error) {
         return res.status(403).json({ message: "Invalid token." });

@@ -8,7 +8,7 @@ import { Documents } from '../entites/Documents';
 import fs from "fs";
 import path from "path";
 import { Messages } from '../entites/messages';
-import { handleCatch, requestDataValidation, sendSuccess } from '../utils/responseHanlder';
+import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 
 
 
@@ -32,24 +32,15 @@ export const createUser = async (req: Request, res: Response) => {
 
 
 export const addTaxfile = async (req: Request, res: Response) => {
-  const { token, firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number } = req.body;
-
-  // console.log("nnnnn",req.body)
+  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, documents } = req.body;
 
   try {
+    const userId = req?.userId;
 
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
+    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+    if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
+      return res.status(400).json({ message: 'Files are required' });
     }
-
-    const userLogRepository = AppDataSource.getRepository(UserLog);
-    const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false } });
-    if (!userLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
-
-    const userId = userLog.user_id_fk;
-
 
 
     const dobDate = new Date(date_of_birth);
@@ -69,10 +60,63 @@ export const addTaxfile = async (req: Request, res: Response) => {
     await requestDataValidation(taxfile)
 
     const returnsRepository = AppDataSource.getRepository(Taxfile);
-    await returnsRepository.save(taxfile);
+    const savedTaxfile = await returnsRepository.save(taxfile);
 
-    res.status(201).json({ message: 'Profile created successfully', taxfile });
+    if (!savedTaxfile) {
+      const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+      for (const file of files) {
+        let filepathfull = null;
+        if (file.originalname) {
+          filepathfull = path.join(__dirname, '..', 'uploads', file.originalname);
+          if (filepathfull != null) {
+            fs.unlinkSync(filepathfull);
+          }
+        }
+      }
+      return sendError(res, "Data Not Saved");
+    }
+    const taxfileId = savedTaxfile.id;
+
+    //documents - start here
+
+    const documentRepository = AppDataSource.getRepository(Documents);
+    for (let i = 0; i < documents.length; i++) {
+      const file = files[i];
+      const typeId = documents[i]['typeid'];
+      const document = new Documents();
+      document.taxfile_id_fk = taxfileId;
+      document.type_id_fk = typeId;
+      let file_name = file.originalname;
+      document.filename = file_name;
+      const saveDocument = await documentRepository.save(document);
+      if (!saveDocument) {
+        let filepathfull = null;
+        if (file.originalname) {
+          filepathfull = path.join(__dirname, '..', 'uploads', file.originalname);
+          if (filepathfull != null) {
+            fs.unlinkSync(filepathfull);
+          }
+        }
+      }
+    }
+    //documents - end here
+
+
+
+    res.status(201).json({ message: 'Taxfile Created successfully', taxfile });
   } catch (e) {
+    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+
+    for (const file of files) {
+      let filepathfull = null;
+      if (file.originalname) {
+        filepathfull = path.join(__dirname, '..', 'uploads', file.originalname);
+        if (filepathfull != null) {
+          fs.unlinkSync(filepathfull);
+        }
+      }
+
+    }
     return handleCatch(res, e);
   }
 };
@@ -125,52 +169,52 @@ export const updateTaxfile = async (req: Request, res: Response) => {
   }
 };
 
+//
+//this upload document is working and kept as an example
+//
+//
+//
+// export const uploadDocuments = async (req: Request, res: Response) => {
+
+//   try {
+//     const { taxfileId, documents } = req.body;
+//     const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+//     if (!taxfileId) {
+//       return res.status(400).json({ message: 'Taxfile ID is required' });
+//     }
+//     if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
+//       return res.status(400).json({ message: 'Files are required' });
+//     }
+
+//     const documentRepository = AppDataSource.getRepository(Documents);
 
 
-export const uploadDocuments = async (req: Request, res: Response) => {
+//     for (let i = 0; i < documents.length; i++) {
+//       const file = files[i];
+//       const typeId = documents[i]['typeid'];
+//       const document = new Documents();
+//       document.taxfile_id_fk = taxfileId;
+//       document.type_id_fk = typeId;
+//       let file_name = file.originalname;
+//       document.filename = file_name;
 
-  try {
-    // const { taxfileId, documents } = req.body;
-    const { documents } = req.body;
-const taxfileId = 3;
-    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
-    console.log("ffffffffffffffffffffffff",files)
-    if (!taxfileId) {
-      return res.status(400).json({ message: 'Taxfile ID is required' });
-    }
-    if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
-      return res.status(400).json({ message: 'Files are required' });
-    }
+//       const saveDocument = await documentRepository.save(document);
+//       if (!saveDocument) {
+//         fs.unlinkSync(path.join(__dirname, '..', 'uploads', file_name));
+//       }
+//     }
 
-    const documentRepository = AppDataSource.getRepository(Documents);
+//     res.status(201).json({ message: 'Documents added successfully' });
+//   } catch (error) {
+//     const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+//     for (const file of files) {
+//       fs.unlinkSync(path.join(__dirname, '..', 'uploads', file.originalname));
+//     }
 
-
-    for (let i = 0; i < documents.length; i++) {
-      const file = files[i];
-      const typeId = documents[i]['typeid'];
-      const document = new Documents();
-      document.taxfile_id_fk = taxfileId;
-      document.type_id_fk = typeId;
-      let file_name = file.originalname;
-      document.filename = file_name;
-
-      const saveDocument = await documentRepository.save(document);
-      if (!saveDocument) {
-        fs.unlinkSync(path.join(__dirname, '..', 'uploads', file_name));
-      }
-    }
-
-    res.status(201).json({ message: 'Documents added successfully' });
-  } catch (error) {
-    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
-    for (const file of files) {
-      fs.unlinkSync(path.join(__dirname, '..', 'uploads', file.originalname));
-    }
-
-    console.error('Error during taxfiles addition:', error);
-    res.status(500).json({ message: 'Something went wrong', error });
-  }
-};
+//     console.error('Error during taxfiles addition:', error);
+//     res.status(500).json({ message: 'Something went wrong', error });
+//   }
+// };
 
 
 export const addClientMessage = async (req: Request, res: Response) => {

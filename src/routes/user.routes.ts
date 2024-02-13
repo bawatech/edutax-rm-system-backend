@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addClientMessage, addTaxfile, getClientMessages, updateTaxfile, uploadDocuments } from "../contollers/user.controller";
+import { addClientMessage, addTaxfile, getClientMessages, updateTaxfile } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -8,7 +8,7 @@ import { clientAuth } from "../middlewares/clientAuth";
 const router = Router();
 
 
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
@@ -29,11 +29,11 @@ router.route("/").post((req, res) => {
   )
 });
 
-router.route("/add-taxfile").post(addTaxfile);
+router.post("/add-taxfile", clientAuth, upload.any(), addTaxfile);
+//router.route("/add-taxfile").post(upload.any(), addTaxfile);
 router.route("/update-taxfile").post(updateTaxfile);
-router.route("/upload-documents").post(upload.any(), uploadDocuments);
+//router.route("/upload-documents").post(upload.any(), uploadDocuments);
 router.route("/add-client-message").post(addClientMessage);
-//router.route("/get-client-messages").post(getClientMessages);
 
 router.post("/get-client-messages", clientAuth, getClientMessages);
 

@@ -9,6 +9,9 @@ export class Documents {
     taxfile_id_fk: number;
 
     @Column()
+    user_id_fk: number;
+
+    @Column()
     type_id_fk: number;
 
     @Column()

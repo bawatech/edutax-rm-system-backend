@@ -8,11 +8,11 @@ export class Taxfile {
     id: number;
 
     @Column({ length: 100 })
-    @Length(1, 100)
+   // @Length(1, 100)
     firstname: string;
 
     @Column({ length: 100 })
-    @Length(1, 100)
+   // @Length(1, 100)
     lastname: string;
 
     @Column({ type: "date" })
@@ -22,23 +22,23 @@ export class Taxfile {
     marital_status: number;
 
     @Column({ length: 255 })
-    @Matches(/^[a-zA-Z0-9\s#\-,.']*$/, { message: 'Street name can only contain letters, numbers, spaces, "#", "-", ",", and "\'"' })
+   // @Matches(/^[a-zA-Z0-9\s#\-,.']*$/, { message: 'Street name can only contain letters, numbers, spaces, "#", "-", ",", and "\'"' })
     street_name: string;
 
     @Column({ length: 100 })
-    @Length(1, 100)
+   // @Length(1, 100)
     city: string;
 
     @Column({ length: 100 })
-    @Length(1, 100)
+   // @Length(1, 100)
     province: string;
 
     @Column({ length: 10 })
-    @IsPostalCode("CA", { message: 'Postal code must be valid' })
+   // @IsPostalCode("CA", { message: 'Postal code must be valid' })
     postal_code: string;
 
     @Column({ length: 15 })
-    @ValidateIf(obj => obj.mobile_number !== '')
+   // @ValidateIf(obj => obj.mobile_number !== '')
     mobile_number: string;
 
     @Column({ default: 'NEW_REQUEST' })
