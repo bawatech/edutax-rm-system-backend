@@ -3,6 +3,7 @@ import { addClientMessage, addTaxfile, getClientMessages, updateTaxfile, uploadD
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
+import { clientAuth } from "../middlewares/clientAuth";
 
 const router = Router();
 
@@ -32,9 +33,9 @@ router.route("/add-taxfile").post(addTaxfile);
 router.route("/update-taxfile").post(updateTaxfile);
 router.route("/upload-documents").post(upload.any(), uploadDocuments);
 router.route("/add-client-message").post(addClientMessage);
-router.route("/get-client-messages").post(getClientMessages);
+//router.route("/get-client-messages").post(getClientMessages);
 
-
+router.post("/get-client-messages", clientAuth, getClientMessages);
 
 
 export default router

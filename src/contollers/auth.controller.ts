@@ -5,7 +5,6 @@ import { AppDataSource } from '../AppDataSource';
 import { v4 as uuidv4 } from 'uuid';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { sendEmail } from '../utils/sendMail';
-import { ClientRequest } from '../middlewares/definationRequest';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;

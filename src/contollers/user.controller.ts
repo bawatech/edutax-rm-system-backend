@@ -130,9 +130,11 @@ export const updateTaxfile = async (req: Request, res: Response) => {
 export const uploadDocuments = async (req: Request, res: Response) => {
 
   try {
-    const { taxfileId, documents } = req.body;
-
+    // const { taxfileId, documents } = req.body;
+    const { documents } = req.body;
+const taxfileId = 3;
     const files: Express.Multer.File[] = req.files as Express.Multer.File[];
+    console.log("ffffffffffffffffffffffff",files)
     if (!taxfileId) {
       return res.status(400).json({ message: 'Taxfile ID is required' });
     }
