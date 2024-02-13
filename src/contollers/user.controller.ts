@@ -85,6 +85,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
       const typeId = documents[i]['typeid'];
       const document = new Documents();
       document.taxfile_id_fk = taxfileId;
+      document.user_id_fk = userId;
       document.type_id_fk = typeId;
       let file_name = file.originalname;
       document.filename = file_name;
