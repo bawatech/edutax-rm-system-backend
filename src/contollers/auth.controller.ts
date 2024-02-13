@@ -5,6 +5,7 @@ import { AppDataSource } from '../AppDataSource';
 import { v4 as uuidv4 } from 'uuid';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { sendEmail } from '../utils/sendMail';
+import { ClientRequest } from '../middlewares/definationRequest';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -14,6 +15,8 @@ export const signUp = async (req: Request, res: Response) => {
     user.email = email;
     user.password = password;
 
+
+
     await requestDataValidation(user)
     const userRepository = AppDataSource.getRepository(User);
     const subject = "Edutax: Verify Email Address";
@@ -21,8 +24,17 @@ export const signUp = async (req: Request, res: Response) => {
     const message = "<h1>Please use the Given OTP to verify Your Email Address</h1><br><br>OTP: " + otp;
     await sendEmail(email, subject, message);
     user.otp = otp;
-    await userRepository.save(user);
-    return sendSuccess(res, "Signed up successfully. Please verify your Email", { user }, 201);
+    const newUser = await userRepository.save(user);
+
+    const token = geenrateToken();
+    const userLog = new UserLog();
+    userLog.user_id_fk = newUser.id;
+    userLog.key = token;
+    const userLogRepository = AppDataSource.getRepository(UserLog);
+    await userLogRepository.save(userLog);
+
+
+    return sendSuccess(res, "Signed up successfully. Please verify your Email", { token, user }, 201);
 
   } catch (e) {
     return handleCatch(res, e);
@@ -59,10 +71,15 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const verifyEmail = async (req: Request, res: Response) => {
-  const { email, otp } = req.body;
+  const { otp } = req.body;
+
+if(!otp){
+  return sendError(res, "Please provide oto")
+}
+
   try {
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: email, otp: otp } });
+    const user = await userRepository.findOne({ where: { otp: otp } });
     if (user) {
       user.otp = '';
       user.verify_status = 'VERIFIED';
@@ -124,31 +141,38 @@ export const newPassword = async (req: Request, res: Response) => {
   }
 };
 
-export const updatePassword = async (req: Request, res: Response) => {
+// export const updatePassword = async (req: ClientRequest, res: Response) => {
+  export const updatePassword = async (req: Request, res: Response) => {
   const { oldPassword, newPassword, token } = req.body;
-  try {
-    const userLogRepository = AppDataSource.getRepository(UserLog);
-    const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false } });
-    if (!userLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
-    const userId = userLog.user_id_fk;
 
-    const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { id: userId, password: oldPassword } });
-    if (user) {
-      user.password = newPassword;
-      // await userRepository.save(user);
-      await userRepository.update(user.id, user);
+  // req.USER_ID //----it will be fetched here like this
 
-      return sendSuccess(res, "Password Updated Successfully", {}, 201);
-    } else {
-      return sendError(res, "Wrong Old Password");
-    }
 
-  } catch (e) {
-    return handleCatch(res, e);
-  }
+
+  // try {
+
+
+  //   const userLogRepository = AppDataSource.getRepository(UserLog);
+  //   const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false } });
+  //   if (!userLog) {
+  //     return res.status(400).json({ message: 'Invalid token or token expired' });
+  //   }
+
+  //   const userRepository = AppDataSource.getRepository(User);
+  //   const user = await userRepository.findOne({ where: { id: req?.CLIENT_ID, password: oldPassword } });
+  //   if (user) {
+  //     user.password = newPassword;
+  //     // await userRepository.save(user);
+  //     await userRepository.update(user.id, user);
+
+  //     return sendSuccess(res, "Password Updated Successfully", {}, 201);
+  //   } else {
+  //     return sendError(res, "Wrong Old Password");
+  //   }
+
+  // } catch (e) {
+  //   return handleCatch(res, e);
+  // }
 };
 
 

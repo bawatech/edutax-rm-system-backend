@@ -10,7 +10,7 @@ export const requestDataValidation = async (data: any) => {
                 result[error.property] = message;
             });
         })
-        throw new CustomError ({message:"Invalid data found",errors:result});
+        throw new CustomError ({message:"Invalid data found",field_errors:result});
     } else {
         return null;
     }

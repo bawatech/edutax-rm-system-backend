@@ -5,6 +5,8 @@ const app = express();
 import userRoutes from './routes/user.routes'
 import authRoutes from './routes/auth.routes'
 import executiveRoutes from './routes/executive.routes'
+import cors from 'cors'
+app.use(cors())
 app.use(express.json());
 const port = process.env.APP_PORT;
 AppDataSource.initialize()

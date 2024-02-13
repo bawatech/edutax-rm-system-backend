@@ -1,12 +1,16 @@
 import { Router } from "express";
 import { login, signUp, verifyEmail, forgotPassword, newPassword, updatePassword } from "../contollers/auth.controller";
+import { clientAuth } from "../middlewares/ClientAuthMiddleware";
 const router = Router();
 
-router.route("/sign-up").post(signUp);
-router.route("/login").post(login);
-router.route("/verify-email").post(verifyEmail);
-router.route("/forgot-password").post(forgotPassword);
-router.route("/new-password").post(newPassword);
-router.route("/update-password").post(updatePassword);
+
+
+router.post("/sign-up", signUp);
+router.post("/login", login);
+router.post("/verify-email", verifyEmail);
+router.post("/forgot-password", forgotPassword);
+router.post("/new-password", newPassword);
+router.post("/update-password", updatePassword);
+// router.post("/update-password", clientAuth, updatePassword);
 
 export default router
