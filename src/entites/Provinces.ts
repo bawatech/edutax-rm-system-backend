@@ -1,11 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 
-@Entity({ name: "marital_status" }) // Set the table name explicitly
-export class MaritalStatus {
+@Entity({ name: "provinces" }) // Set the table name explicitly
+export class Provinces {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: "enum", enum: ["MRD", "UNM", "CLW"] })
+    @Column({ length: 255 })
     code: string;
 
     @Column({ length: 255 })

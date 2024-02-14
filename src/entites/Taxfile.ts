@@ -1,44 +1,57 @@
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn } from "typeorm";
-import { Length, IsDate, IsInt, IsAlphanumeric, IsPostalCode, ValidateIf, Matches } from "class-validator";
-import { isValidPhoneNumber } from 'libphonenumber-js';
+import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "class-validator";
+// import { isValidPhoneNumber } from 'libphonenumber-js';
+import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
 
 @Entity()
 export class Taxfile {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ length: 100 })
-   // @Length(1, 100)
+    @Column()
+    // @IsOptional()
+    @IsAlphanumeric()
+    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     firstname: string;
 
-    @Column({ length: 100 })
-   // @Length(1, 100)
+    @Column()
+    @IsAlphanumeric()
+    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     lastname: string;
 
     @Column({ type: "date" })
-    date_of_birth: Date;
+    @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+        message: 'The date must be in the correct format',
+    })
+    date_of_birth: string;
 
     @Column()
-    marital_status: number;
+    @IsMaritalStatus()
+    marital_status: string;
 
-    @Column({ length: 255 })
-   // @Matches(/^[a-zA-Z0-9\s#\-,.']*$/, { message: 'Street name can only contain letters, numbers, spaces, "#", "-", ",", and "\'"' })
+    @Column()
+    @IsAlphanumeric()
+    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     street_name: string;
 
-    @Column({ length: 100 })
-   // @Length(1, 100)
+    @Column()
+    @IsAlphanumeric()
+    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     city: string;
 
     @Column({ length: 100 })
-   // @Length(1, 100)
+    @IsAlphanumeric()
+    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     province: string;
 
-    @Column({ length: 10 })
-   // @IsPostalCode("CA", { message: 'Postal code must be valid' })
+    @Column()
+    @IsPostalCode("CA", { message: 'Invalid Postal code' })
     postal_code: string;
 
-    @Column({ length: 15 })
-   // @ValidateIf(obj => obj.mobile_number !== '')
+    @Column()
+    @Matches(/^(\+?1\s?)?(\([2-9][0-9]{2}\)|[2-9][0-9]{2})[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/, { //This expression allows for various formats, including with or without the country code, with or without parentheses, and with or without separators such as hyphens or spaces.
+        message: 'Invalid Canadian mobile number'
+    })
     mobile_number: string;
 
     @Column({ default: 'NEW_REQUEST' })
@@ -50,9 +63,11 @@ export class Taxfile {
     @Column()
     file_status_updated_by: number;
 
-
-    @Column({ type: "int" })
-    tax_year: number;
+    @Column()
+    @Matches(/^\d{4}$/, {
+        message: 'Invalid Tax Year',
+    })
+    tax_year: string;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     created_on: Date;
@@ -65,42 +80,6 @@ export class Taxfile {
 
     @Column()
     updated_by: number;
-
-    validate() {
-        console.log('Validating Taxfile entity...');
-        const errors: { property: string, message: string }[] = [];
-
-        //for mobile number
-        if (this.mobile_number && !isValidPhoneNumber(this.mobile_number, 'CA')) {
-            errors.push({ property: 'mobile_number', message: 'Mobile number must be valid for Canada' });
-        }
-
-        //for tax_year
-        if (typeof this.tax_year === 'string') {
-            const parsedYear = parseInt(this.tax_year);
-            if (isNaN(parsedYear) || parsedYear < 1000 || parsedYear > 9999) {
-                errors.push({ property: 'tax_year', message: 'Year must be a four-digit number' });
-            }
-        } else if (!Number.isInteger(this.tax_year) || this.tax_year < 1000 || this.tax_year > 9999) {
-            errors.push({ property: 'tax_year', message: 'Year must be a four-digit number' });
-        }
-
-        //for date_of_birth
-        if (typeof this.date_of_birth === 'string') {
-            const parsedDate = new Date(this.date_of_birth);
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dateRegex.test(this.date_of_birth) || isNaN(parsedDate.getTime())) {
-                errors.push({ property: 'date_of_birth', message: 'Date of birth must be in YYYY-MM-DD format' });
-            }
-        } else if (!this.date_of_birth || isNaN(this.date_of_birth.getTime())) {
-            errors.push({ property: 'date_of_birth', message: 'Date of birth must be a valid Date object' });
-        }
-
-        if (errors.length > 0) {
-            console.log('Validation errors:', errors);
-            throw new Error(errors.map(error => `${error.property}: ${error.message}`).join('\n'));
-        }
-    }
 
 
     // @BeforeInsert()

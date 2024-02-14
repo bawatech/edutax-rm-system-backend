@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
-import { IsEmail, Length } from "class-validator";
+import { IsEmail } from "class-validator";
 import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
+import { IsStrongPassword } from "./dataValidations/strongPassword";
 
 @Entity()
 export class User {
@@ -8,7 +9,8 @@ export class User {
     id: number
 
     @Column()
-    @Length(8, 20, { message: 'Password must be between 8 and 20 characters long' })
+    // @Length(8, 20, { message: 'Password must be between 8 and 20 characters long' })
+    @IsStrongPassword()
     password: string
 
     @Column()

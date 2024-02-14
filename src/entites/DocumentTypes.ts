@@ -9,6 +9,6 @@ export class DocumentTypes {
     code: string;
 
     @Column()
-    user_id_fk: number;
+    name: string;
 
 }

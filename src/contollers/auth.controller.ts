@@ -72,13 +72,14 @@ export const login = async (req: Request, res: Response) => {
 export const verifyEmail = async (req: Request, res: Response) => {
   const { otp } = req.body;
 
-if(!otp){
-  return sendError(res, "Please provide oto")
-}
+  if (!otp) {
+    return sendError(res, "Please provide otp")
+  }
 
   try {
+    const userId = req?.userId;
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { otp: otp } });
+    const user = await userRepository.findOne({ where: { otp: otp, id: userId, verify_status: "PENDING" } });
     if (user) {
       user.otp = '';
       user.verify_status = 'VERIFIED';
@@ -141,7 +142,7 @@ export const newPassword = async (req: Request, res: Response) => {
 };
 
 // export const updatePassword = async (req: ClientRequest, res: Response) => {
-  export const updatePassword = async (req: Request, res: Response) => {
+export const updatePassword = async (req: Request, res: Response) => {
   const { oldPassword, newPassword, token } = req.body;
 
   // req.USER_ID //----it will be fetched here like this

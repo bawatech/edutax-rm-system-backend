@@ -8,9 +8,14 @@ import executiveRoutes from './routes/executive.routes'
 import cors from 'cors'
 app.use(cors())
 app.use(express.json());
+import path from 'path';
+
+
 const port = process.env.APP_PORT;
 AppDataSource.initialize()
     .then(() => {
+
+        app.use('/storage/documents', express.static(path.join(__dirname, '..', 'storage', 'documents'))); // for uploads
 
         app.use('/user', userRoutes)
         app.use('/auth', authRoutes)

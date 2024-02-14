@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { User } from '../entites/User';
 import { AppDataSource } from '../AppDataSource';
-import { validate } from 'class-validator';
 import { Taxfile } from '../entites/Taxfile';
 import { UserLog } from '../entites/UserLog';
 import { Documents } from '../entites/Documents';
@@ -9,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { Messages } from '../entites/messages';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
+
 
 
 
@@ -32,7 +32,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 
 export const addTaxfile = async (req: Request, res: Response) => {
-  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, documents } = req.body;
+  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, tax_year, documents } = req.body;
 
   try {
     const userId = req?.userId;
@@ -48,13 +48,14 @@ export const addTaxfile = async (req: Request, res: Response) => {
     const taxfile = new Taxfile();
     taxfile.firstname = firstname;
     taxfile.lastname = lastname;
-    taxfile.date_of_birth = dobDate;
+    taxfile.date_of_birth = date_of_birth;
     taxfile.marital_status = marital_status;
     taxfile.street_name = street_name;
     taxfile.city = city;
     taxfile.province = province;
     taxfile.postal_code = postal_code;
     taxfile.mobile_number = mobile_number;
+    taxfile.tax_year = tax_year;
     taxfile.created_by = userId;
 
     await requestDataValidation(taxfile)
@@ -67,7 +68,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
       for (const file of files) {
         let filepathfull = null;
         if (file.originalname) {
-          filepathfull = path.join(__dirname, '..', 'uploads', file.originalname);
+          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
           if (filepathfull != null) {
             fs.unlinkSync(filepathfull);
           }
@@ -93,7 +94,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
       if (!saveDocument) {
         let filepathfull = null;
         if (file.originalname) {
-          filepathfull = path.join(__dirname, '..', 'uploads', file.originalname);
+          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
           if (filepathfull != null) {
             fs.unlinkSync(filepathfull);
           }
@@ -111,7 +112,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     for (const file of files) {
       let filepathfull = null;
       if (file.originalname) {
-        filepathfull = path.join(__dirname, '..', 'uploads', file.originalname);
+        filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
         if (filepathfull != null) {
           fs.unlinkSync(filepathfull);
         }
@@ -126,7 +127,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 
 export const updateTaxfile = async (req: Request, res: Response) => {
-  const { id, token, firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number } = req.body;
+  const { id, token, firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, tax_year } = req.body;
 
   try {
     if (!token) {
@@ -151,13 +152,14 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     // Update taxfile properties
     taxfile.firstname = firstname;
     taxfile.lastname = lastname;
-    taxfile.date_of_birth = new Date(date_of_birth);
+    taxfile.date_of_birth = date_of_birth;
     taxfile.marital_status = marital_status;
     taxfile.street_name = street_name;
     taxfile.city = city;
     taxfile.province = province;
     taxfile.postal_code = postal_code;
     taxfile.mobile_number = mobile_number;
+    taxfile.tax_year = tax_year;
     taxfile.updated_by = userId;
 
     await requestDataValidation(taxfile)
@@ -173,16 +175,46 @@ export const updateTaxfile = async (req: Request, res: Response) => {
 export const taxFileDetails = async (req: Request, res: Response) => {
 
   try {
-    const id  = parseInt(req.params?.id)
+    const id = parseInt(req?.params?.id)
     const userId = req?.userId;
-    // Find the existing taxfile record by ID
-    const returnsRepository = AppDataSource.getRepository(Taxfile);
-    const taxfile = await returnsRepository.findOne({ where: { id: id } });
+    const taxRepo = AppDataSource.getRepository(Taxfile);
+    // const taxfile = await taxRepo.findOne({ where: { id: id, created_by: userId } });
+
+    const taxfile = await taxRepo.query(
+      `SELECT t.*, p.name AS province_name, m.name AS marital_status_name
+       FROM taxfile t
+       LEFT JOIN provinces p ON t.province = p.code
+       LEFT JOIN marital_status m ON t.marital_status = m.code
+       WHERE t.id = ? AND t.created_by = ?`,
+      [id, userId]
+    );
+
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found' });
     }
 
-    res.status(200).json({ message: 'Success', taxfile });
+
+    const documentsRepo = AppDataSource.getRepository(Documents);
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, user_id_fk: userId } });
+    if (!documents) {
+      return res.status(400).json({ message: 'Documents not found' });
+    }
+
+    // const uploadDir = path.join(__dirname, '..', '..', 'storage', 'documents');
+
+    const base_url = process.env.BASE_URL;
+    // const documentsWithPath = documents.map(doc => ({
+    //   ...doc,
+    //   full_path: path.join(uploadDir, doc.filename)
+    // }));
+    const documentsWithPath = documents.map(doc => ({
+      ...doc,
+      full_path: `${base_url}/storage/documents/${doc.filename}`
+    }));
+
+    taxfile[0].documents = documentsWithPath;
+
+    res.status(200).json({ message: 'Success', taxfile: taxfile[0] });
   } catch (e) {
     return handleCatch(res, e);
   }
