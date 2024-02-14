@@ -5,7 +5,7 @@ export class MaritalStatus {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ type: "enum", enum: ["M", "UNM"] })
+    @Column({ type: "enum", enum: ["MRD", "UNM"] })
     code: string;
 
     @Column({ length: 255 })

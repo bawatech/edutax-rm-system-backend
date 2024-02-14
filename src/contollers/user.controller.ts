@@ -170,6 +170,23 @@ export const updateTaxfile = async (req: Request, res: Response) => {
   }
 };
 
+export const taxFileDetails = async (req: Request, res: Response) => {
+
+  try {
+    const id  = parseInt(req.params?.id)
+    const userId = req?.userId;
+    // Find the existing taxfile record by ID
+    const returnsRepository = AppDataSource.getRepository(Taxfile);
+    const taxfile = await returnsRepository.findOne({ where: { id: id } });
+    if (!taxfile) {
+      return res.status(400).json({ message: 'Taxfile not found' });
+    }
+
+    res.status(200).json({ message: 'Success', taxfile });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
 //
 //this upload document is working and kept as an example
 //
@@ -222,17 +239,8 @@ export const addClientMessage = async (req: Request, res: Response) => {
   const { token, message, taxfile_id } = req.body;
   try {
 
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
-    }
 
-    const userLogRepository = AppDataSource.getRepository(UserLog);
-    const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
-    if (!userLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
-
-    const userId = userLog.user_id_fk;
+    const userId = req?.userId;
 
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
     const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, created_by: userId } });
