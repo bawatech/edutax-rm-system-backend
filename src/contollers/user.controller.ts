@@ -85,7 +85,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 
     const taxfile = new Taxfile();
-    console.log("profile.date_of_birth",profile.date_of_birth)
+    console.log("profile.date_of_birth", profile.date_of_birth)
     taxfile.profile_id_fk = profile.id
     taxfile.firstname = profile.firstname;
     taxfile.lastname = profile.lastname;
@@ -392,15 +392,15 @@ export const addClientMessage = async (req: Request, res: Response) => {
 };
 
 export const getClientMessages = async (req: Request, res: Response) => {
-  const { token, taxfile_id } = req.body;
+  // const { } = req.body;
   try {
 
     const taxfile_id = parseInt(req?.params?.id)
 
     const userId = req?.userId;
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
-    }
+    // if (!token) {
+    //   return res.status(400).json({ message: 'Token is required' });
+    // }
 
     // const userLogRepository = AppDataSource.getRepository(UserLog);
     // const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
