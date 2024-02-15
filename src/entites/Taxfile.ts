@@ -9,6 +9,9 @@ export class Taxfile {
     id: number;
 
     @Column()
+    profile_id_fk: number;
+
+    @Column()
     firstname: string;
 
     @Column()

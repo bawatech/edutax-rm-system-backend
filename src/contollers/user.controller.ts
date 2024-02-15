@@ -9,6 +9,8 @@ import path from "path";
 import { Messages } from '../entites/messages';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { Profile } from '../entites/Profile';
+import { FindOneOptions } from 'typeorm';
+
 
 
 
@@ -52,7 +54,7 @@ export const createProfile = async (req: Request, res: Response) => {
 
     await requestDataValidation(profile)
 
-    const profileRepo = AppDataSource.getRepository(Taxfile);
+    const profileRepo = AppDataSource.getRepository(Profile);
     await profileRepo.save(profile);
 
     res.status(201).json({ message: 'Profile Created successfully', profile });
@@ -62,7 +64,7 @@ export const createProfile = async (req: Request, res: Response) => {
 };
 
 export const addTaxfile = async (req: Request, res: Response) => {
-  const {tax_year, documents, province } = req.body;
+  const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra } = req.body;
 
   try {
     const userId = req?.userId;
@@ -72,10 +74,18 @@ export const addTaxfile = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Files are required' });
     }
 
+    const profileRepo = AppDataSource.getRepository(Profile);
+    const profile = await profileRepo.findOne({
+      where: { added_by: userId },
+      order: { added_on: 'DESC' } as FindOneOptions['order']
+    });
+    if (!profile) {
+      return sendError(res, "Profile Not Found");
+    }
 
-    const profile = new Profile();
 
     const taxfile = new Taxfile();
+    taxfile.profile_id_fk = profile.id
     taxfile.firstname = profile.firstname;
     taxfile.lastname = profile.lastname;
     taxfile.date_of_birth = profile.date_of_birth;
@@ -86,6 +96,11 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.postal_code = profile.postal_code;
     taxfile.mobile_number = profile.mobile_number;
     taxfile.tax_year = tax_year;
+    taxfile.taxfile_province = taxfile_province;
+    taxfile.moved_to_canada = moved_to_canada;
+    taxfile.date_of_entry = date_of_entry;
+    taxfile.direct_deposit_cra = direct_deposit_cra;
+    taxfile.document_direct_deposit_cra = document_direct_deposit_cra;
     taxfile.added_by = userId;
 
     await requestDataValidation(taxfile)
