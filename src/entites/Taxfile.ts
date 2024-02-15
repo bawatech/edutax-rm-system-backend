@@ -17,8 +17,8 @@ export class Taxfile {
     @Column()
     lastname: string;
 
-    @Column()
-    date_of_birth: string;
+    @Column({ type: "date", nullable: true })
+    date_of_birth: Date;
 
     @Column()
     marital_status: string;

@@ -19,11 +19,11 @@ export class Profile {
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     lastname: string;
 
-    @Column({ type: "date" })
+    @Column({ type: "date", nullable: true })
     @Matches(/^\d{4}-\d{2}-\d{2}$/, {
         message: 'The date must be in the correct format',
     })
-    date_of_birth: string;
+    date_of_birth: Date;
 
     @Column()
     @IsMaritalStatus()
