@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addClientMessage, addTaxfile, getClientMessages, taxFileDetails, updateTaxfile } from "../contollers/user.controller";
+import { addClientMessage, addTaxfile, createProfile, getClientMessages, taxFileDetails, updateTaxfile } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -37,6 +37,8 @@ router.route("/taxfile-details/:id").get(clientAuth, taxFileDetails);
 router.route("/add-client-message").post(clientAuth,addClientMessage);
 
 router.post("/get-client-messages", clientAuth, getClientMessages);
+
+router.post("/create-profile", clientAuth, createProfile);
 
 
 export default router

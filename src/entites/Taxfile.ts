@@ -9,50 +9,46 @@ export class Taxfile {
     id: number;
 
     @Column()
-    // @IsOptional()
-    @IsAlphanumeric()
-    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     firstname: string;
 
     @Column()
-    @IsAlphanumeric()
-    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     lastname: string;
 
-    @Column({ type: "date" })
-    @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-        message: 'The date must be in the correct format',
-    })
+    @Column()
     date_of_birth: string;
 
     @Column()
-    @IsMaritalStatus()
     marital_status: string;
 
     @Column()
-    @IsAlphanumeric()
-    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     street_name: string;
 
     @Column()
-    @IsAlphanumeric()
-    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     city: string;
 
-    @Column({ length: 100 })
-    @IsAlphanumeric()
-    @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
+    @Column()
     province: string;
 
     @Column()
-    @IsPostalCode("CA", { message: 'Invalid Postal code' })
     postal_code: string;
 
     @Column()
-    @Matches(/^(\+?1\s?)?(\([2-9][0-9]{2}\)|[2-9][0-9]{2})[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/, { //This expression allows for various formats, including with or without the country code, with or without parentheses, and with or without separators such as hyphens or spaces.
-        message: 'Invalid Canadian mobile number'
-    })
     mobile_number: string;
+
+    @Column()
+    taxfile_province: string;
+
+    @Column()
+    moved_to_canada: string;
+
+    @Column()
+    date_of_entry: string;
+
+    @Column()
+    direct_deposit_cra: string;
+
+    @Column()
+    document_direct_deposit_cra: string;
 
     @Column({ default: 'NEW_REQUEST' })
     file_status: string;
@@ -64,16 +60,16 @@ export class Taxfile {
     file_status_updated_by: number;
 
     @Column()
-    @Matches(/^\d{4}$/, {
-        message: 'Invalid Tax Year',
-    })
+    // @Matches(/^\d{4}$/, {
+    //     message: 'Invalid Tax Year',
+    // })
     tax_year: string;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    created_on: Date;
+    added_on: Date;
 
     @Column()
-    created_by: number;
+    added_by: number;
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     updated_on: Date | null;
