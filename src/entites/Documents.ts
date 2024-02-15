@@ -18,6 +18,6 @@ export class Documents {
     filename: string;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    created_on: Date;
+    added_on: Date;
 
 }

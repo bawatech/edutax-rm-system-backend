@@ -85,6 +85,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 
     const taxfile = new Taxfile();
+    console.log("profile.date_of_birth",profile.date_of_birth)
     taxfile.profile_id_fk = profile.id
     taxfile.firstname = profile.firstname;
     taxfile.lastname = profile.lastname;
@@ -311,6 +312,8 @@ export const taxFileDetails = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req?.params?.id)
     const userId = req?.userId;
+    // console.log("iiiiiiiiiiiiiiiiiiiiiiii",id)
+    // console.log("userIduserId",userId)
     const taxRepo = AppDataSource.getRepository(Taxfile);
     // const taxfile = await taxRepo.findOne({ where: { id: id, created_by: userId } });
 
@@ -319,8 +322,8 @@ export const taxFileDetails = async (req: Request, res: Response) => {
        FROM taxfile t
        LEFT JOIN provinces p ON t.province = p.code
        LEFT JOIN marital_status m ON t.marital_status = m.code
-       WHERE t.id = ? AND t.created_by = ? AND t.is_taxfile = ?`,
-      [id, userId, true]
+       WHERE t.id = ? AND t.added_by = ?`,
+      [id, userId]
     );
 
     if (!taxfile) {
@@ -391,18 +394,20 @@ export const addClientMessage = async (req: Request, res: Response) => {
 export const getClientMessages = async (req: Request, res: Response) => {
   const { token, taxfile_id } = req.body;
   try {
+
+    const taxfile_id = parseInt(req?.params?.id)
+
+    const userId = req?.userId;
     if (!token) {
       return res.status(400).json({ message: 'Token is required' });
     }
 
-    const userLogRepository = AppDataSource.getRepository(UserLog);
-    const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
-
-    if (!userLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
-
-    const userId = userLog.user_id_fk;
+    // const userLogRepository = AppDataSource.getRepository(UserLog);
+    // const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+    // if (!userLog) {
+    //   return res.status(400).json({ message: 'Invalid token or token expired' });
+    // }
+    // const userId = userLog.user_id_fk;
 
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
     const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, added_by: userId } });

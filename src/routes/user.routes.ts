@@ -36,7 +36,8 @@ router.route("/taxfile-details/:id").get(clientAuth, taxFileDetails);
 //router.route("/upload-documents").post(upload.any(), uploadDocuments);
 router.route("/add-client-message").post(clientAuth,addClientMessage);
 
-router.post("/get-client-messages", clientAuth, getClientMessages);
+// router.post("/get-client-messages", clientAuth, getClientMessages);
+router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
 
 router.post("/create-profile", clientAuth, createProfile);
 
