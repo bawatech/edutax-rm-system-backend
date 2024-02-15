@@ -10,6 +10,7 @@ import { TaxfileStatusLog } from '../entites/TaxfileStatusLog';
 import { UserLog } from '../entites/UserLog';
 import { Messages } from '../entites/messages';
 import { handleCatch, requestDataValidation, sendSuccess } from '../utils/responseHanlder';
+import { Documents } from '../entites/Documents';
 
 
 
@@ -28,7 +29,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid password' });
     }
 
-    const token = uuidv4();
+    const token = geenrateToken();
 
     const executiveLog = new ExecutiveLog();
     executiveLog.executive_id_fk = executive.id;
@@ -38,7 +39,7 @@ export const login = async (req: Request, res: Response) => {
     const userLogRepository = AppDataSource.getRepository(ExecutiveLog);
     await userLogRepository.save(executiveLog);
 
-    res.status(200).json({ message: 'Login successful', token });
+    res.status(200).json({ message: 'LoggedIn successfully', token });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -49,31 +50,25 @@ export const login = async (req: Request, res: Response) => {
 export const addExecutive = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  const executive = new Executive();
-  executive.email = email;
-  executive.password = password;
+
 
   try {
-
-    const errors = await validate(executive);
-    if (errors.length > 0) {
-      const errorMessages = errors.map(error => {
-        if (error.constraints) {
-          return Object.values(error.constraints);
-        }
-        return [];
-      }).flat();
-      return res.status(400).json({ message: 'Invalid executive data', errors: errorMessages });
-    }
-
+    const executive = new Executive();
+    executive.email = email;
+    executive.password = password;
+    await requestDataValidation(executive)
+    // const errors = await validate(executive);
+    // if (errors.length > 0) {
+    //   const errorMessages = errors.map(error => {
+    //     if (error.constraints) {
+    //       return Object.values(error.constraints);
+    //     }
+    //     return [];
+    //   }).flat();
+    //   return res.status(400).json({ message: 'Invalid executive data', errors: errorMessages });
+    // }
 
     const executiveRepository = AppDataSource.getRepository(Executive);
-    const existingUser = await executiveRepository.findOne({ where: { email: executive.email } });
-    if (existingUser) {
-      return res.status(400).json({ message: 'Executive with this email already exists' });
-    }
-
-
     await executiveRepository.save(executive);
 
     res.status(201).json({ message: 'Executive Added successfully', executive });
@@ -141,20 +136,20 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
 };
 
 export const addExecutiveMessage = async (req: Request, res: Response) => {
-  const { token, message, taxfile_id, category } = req.body;
+  const { message, taxfile_id, category } = req.body;
   try {
+    const execId = req?.execId;
+    // if (!token) {
+    //   return res.status(400).json({ message: 'Token is required' });
+    // }
 
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
-    }
+    // const executiveLogRepository = AppDataSource.getRepository(ExecutiveLog);
+    // const executiveLog = await executiveLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+    // if (!executiveLog) {
+    //   return res.status(400).json({ message: 'Invalid token or token expired' });
+    // }
 
-    const executiveLogRepository = AppDataSource.getRepository(ExecutiveLog);
-    const executiveLog = await executiveLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
-    if (!executiveLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
-
-    const executiveId = executiveLog.executive_id_fk;
+    // const executiveId = executiveLog.executive_id_fk;
 
     const msgRepo = AppDataSource.getRepository(Messages);
     const msgTab = new Messages();
@@ -162,7 +157,7 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
     msgTab.message = message;
     msgTab.category = category;
     msgTab.user_type = "EXECUTIVE";
-    msgTab.added_by = executiveId;
+    msgTab.added_by = execId;
 
     await requestDataValidation(msgTab);
 
@@ -175,25 +170,28 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
 };
 
 export const getExecutiveMessages = async (req: Request, res: Response) => {
-  const { token, taxfile_id } = req.body;
+  // const { token, taxfile_id } = req.body;
   try {
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
-    }
+    const taxfile_id = parseInt(req?.params?.id)
 
-    const executiveLogRepository = AppDataSource.getRepository(ExecutiveLog);
-    const executiveLog = await executiveLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
-    if (!executiveLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
+    const execId = req?.execId;
+    // if (!token) {
+    //   return res.status(400).json({ message: 'Token is required' });
+    // }
 
-    const executiveId = executiveLog.executive_id_fk;
+    // const executiveLogRepository = AppDataSource.getRepository(ExecutiveLog);
+    // const executiveLog = await executiveLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+    // if (!executiveLog) {
+    //   return res.status(400).json({ message: 'Invalid token or token expired' });
+    // }
+
+    // const executiveId = executiveLog.executive_id_fk;
 
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
     const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id } });
 
     if (!taxfile) {
-      return res.status(400).json({ message: 'Taxfile not found or not associated with the user' });
+      return res.status(400).json({ message: 'Taxfile not found' });
     }
 
     const messageRepository = AppDataSource.getRepository(Messages);
@@ -207,3 +205,66 @@ export const getExecutiveMessages = async (req: Request, res: Response) => {
     return handleCatch(res, e);
   }
 };
+
+
+export const taxfilesList = async (req: Request, res: Response) => {
+  try {
+    const taxfilesRepo = AppDataSource.getRepository(Taxfile);
+    const taxfiles = await taxfilesRepo.find();
+
+    return sendSuccess(res, "Taxfiles Fetched Successfully", { taxfiles }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+export const taxfileDetail = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req?.params?.id)
+    const execId = req?.execId;
+
+    const taxRepo = AppDataSource.getRepository(Taxfile);
+
+    const taxfile = await taxRepo.query(
+      `SELECT t.*, p.name AS province_name, m.name AS marital_status_name
+       FROM taxfile t
+       LEFT JOIN provinces p ON t.province = p.code
+       LEFT JOIN marital_status m ON t.marital_status = m.code
+       WHERE t.id = ?`,
+      [id]
+    );
+
+    if (!taxfile) {
+      return res.status(400).json({ message: 'Taxfile not found' });
+    }
+
+    const documentsRepo = AppDataSource.getRepository(Documents);
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id } });
+    if (!documents) {
+      return res.status(400).json({ message: 'Documents not found' });
+    }
+
+    const base_url = process.env.BASE_URL;
+
+    const documentsWithPath = documents.map(doc => ({
+      ...doc,
+      full_path: `${base_url}/storage/documents/${doc.filename}`
+    }));
+
+    taxfile[0].documents = documentsWithPath;
+
+    res.status(200).json({ message: 'Success', taxfile: taxfile[0] });
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+
+
+
+const geenrateToken = () => {
+  return uuidv4();
+}

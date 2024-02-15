@@ -1,5 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
-import { IsEmail, Length } from "class-validator";
+import { IsEmail } from "class-validator";
+import { IsStrongPassword } from "./dataValidations/strongPassword";
+import { IsUniqueExecutive } from "./dataValidations/IsUniqueExecutive";
 
 @Entity()
 export class Executive {
@@ -8,10 +10,11 @@ export class Executive {
 
     @Column()
     @IsEmail()
+    @IsUniqueExecutive()
     email: string;
 
     @Column()
-    @Length(8, 20, { message: 'Password must be between 8 and 20 characters long' })
+    @IsStrongPassword()
     password: string
 
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })

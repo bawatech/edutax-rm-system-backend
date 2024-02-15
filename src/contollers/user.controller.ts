@@ -360,7 +360,7 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 
 
 export const addClientMessage = async (req: Request, res: Response) => {
-  const { token, message, taxfile_id } = req.body;
+  const {message, taxfile_id } = req.body;
   try {
 
 

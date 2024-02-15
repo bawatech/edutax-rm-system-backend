@@ -31,7 +31,7 @@ router.route("/").post((req, res) => {
 
 router.post("/add-taxfile", clientAuth, upload.any(), addTaxfile);
 //router.route("/add-taxfile").post(upload.any(), addTaxfile);
-router.route("/update-taxfile").post(updateTaxfile);
+router.route("/update-taxfile").post(clientAuth,updateTaxfile);
 router.route("/taxfile-details/:id").get(clientAuth, taxFileDetails);
 //router.route("/upload-documents").post(upload.any(), uploadDocuments);
 router.route("/add-client-message").post(clientAuth,addClientMessage);
