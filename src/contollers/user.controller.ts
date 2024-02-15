@@ -66,10 +66,14 @@ export const createProfile = async (req: Request, res: Response) => {
 export const addTaxfile = async (req: Request, res: Response) => {
   const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra } = req.body;
 
+  // Handle array of files
+  const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
+
+  const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
+
   try {
     const userId = req?.userId;
 
-    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
     if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
       return res.status(400).json({ message: 'Files are required' });
     }
@@ -85,7 +89,6 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 
     const taxfile = new Taxfile();
-    console.log("profile.date_of_birth", profile.date_of_birth)
     taxfile.profile_id_fk = profile.id
     taxfile.firstname = profile.firstname;
     taxfile.lastname = profile.lastname;
@@ -101,7 +104,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.moved_to_canada = moved_to_canada;
     taxfile.date_of_entry = date_of_entry;
     taxfile.direct_deposit_cra = direct_deposit_cra;
-    taxfile.document_direct_deposit_cra = document_direct_deposit_cra;
+    taxfile.document_direct_deposit_cra = singleFile?.originalname ?? ''; //the expression evaluates to '' (an empty string)
     taxfile.added_by = userId;
 
     await requestDataValidation(taxfile)
@@ -110,7 +113,6 @@ export const addTaxfile = async (req: Request, res: Response) => {
     const savedTaxfile = await returnsRepository.save(taxfile);
 
     if (!savedTaxfile) {
-      const files: Express.Multer.File[] = req.files as Express.Multer.File[];
       for (const file of files) {
         let filepathfull = null;
         if (file.originalname) {
@@ -118,6 +120,14 @@ export const addTaxfile = async (req: Request, res: Response) => {
           if (filepathfull != null) {
             fs.unlinkSync(filepathfull);
           }
+        }
+      }
+
+      let singleFileFullPath = null;
+      if (singleFile?.originalname) {
+        singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.originalname);
+        if (singleFileFullPath != null) {
+          fs.unlinkSync(singleFileFullPath);
         }
       }
       return sendError(res, "Data Not Saved");
@@ -145,13 +155,20 @@ export const addTaxfile = async (req: Request, res: Response) => {
             fs.unlinkSync(filepathfull);
           }
         }
+
+        let singleFileFullPath = null;
+        if (singleFile?.originalname) {
+          singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.originalname);
+          if (singleFileFullPath != null) {
+            fs.unlinkSync(singleFileFullPath);
+          }
+        }
       }
     }
     //documents - end here
 
     res.status(201).json({ message: 'Taxfile Created successfully', taxfile });
   } catch (e) {
-    const files: Express.Multer.File[] = req.files as Express.Multer.File[];
 
     for (const file of files) {
       let filepathfull = null;
@@ -161,8 +178,16 @@ export const addTaxfile = async (req: Request, res: Response) => {
           fs.unlinkSync(filepathfull);
         }
       }
-
     }
+
+    let singleFileFullPath = null;
+    if (singleFile?.originalname) {
+      singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.originalname);
+      if (singleFileFullPath != null) {
+        fs.unlinkSync(singleFileFullPath);
+      }
+    }
+
     return handleCatch(res, e);
   }
 };
@@ -360,7 +385,7 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 
 
 export const addClientMessage = async (req: Request, res: Response) => {
-  const {message, taxfile_id } = req.body;
+  const { message, taxfile_id } = req.body;
   try {
 
 
