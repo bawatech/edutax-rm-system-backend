@@ -247,14 +247,16 @@ export const taxfileDetail = async (req: Request, res: Response) => {
 
     const base_url = process.env.BASE_URL;
 
+    const taxfileMod = { ...taxfile[0], document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile[0].document_direct_deposit_cra}` }
+
     const documentsWithPath = documents.map(doc => ({
       ...doc,
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    taxfile[0].documents = documentsWithPath;
+    taxfileMod.documents = documentsWithPath;
 
-    res.status(200).json({ message: 'Success', taxfile: taxfile[0] });
+    res.status(200).json({ message: 'Success', taxfile: taxfileMod });
 
   } catch (e) {
     return handleCatch(res, e);

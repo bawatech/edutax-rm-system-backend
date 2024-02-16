@@ -362,9 +362,11 @@ export const taxFileDetails = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Documents not found' });
     }
 
+    const base_url = process.env.BASE_URL;
+
+    const taxfileMod = {...taxfile[0],document_direct_deposit_cra:`${base_url}/storage/documents/${taxfile[0].document_direct_deposit_cra}`}
     // const uploadDir = path.join(__dirname, '..', '..', 'storage', 'documents');
 
-    const base_url = process.env.BASE_URL;
     // const documentsWithPath = documents.map(doc => ({
     //   ...doc,
     //   full_path: path.join(uploadDir, doc.filename)
@@ -374,9 +376,9 @@ export const taxFileDetails = async (req: Request, res: Response) => {
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    taxfile[0].documents = documentsWithPath;
-
-    res.status(200).json({ message: 'Success', taxfile: taxfile[0] });
+    taxfileMod.documents = documentsWithPath;
+console.log("taxfileModtaxfileMod",taxfileMod)
+    res.status(200).json({ message: 'Success', taxfile: taxfileMod });
   } catch (e) {
     return handleCatch(res, e);
   }
