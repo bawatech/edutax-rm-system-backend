@@ -17,6 +17,9 @@ export class Executive {
     @IsStrongPassword()
     password: string
 
+    @Column({default: 'EXECUTIVE', type: 'enum', enum: ['ADMIN', 'EXECUTIVE'] })
+    user_type: string;
+
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })
     id_status: string;
 
@@ -31,6 +34,9 @@ export class Executive {
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     added_on: Date;
+
+    @Column()
+    added_by: number;
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     deleted_on: Date | null;

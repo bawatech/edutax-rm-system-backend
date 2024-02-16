@@ -12,6 +12,7 @@ import { Messages } from '../entites/messages';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { Documents } from '../entites/Documents';
 import { sendEmail } from '../utils/sendMail';
+import { Templates } from '../entites/Templates';
 
 
 
@@ -35,7 +36,7 @@ export const login = async (req: Request, res: Response) => {
     const executiveLog = new ExecutiveLog();
     executiveLog.executive_id_fk = executive.id;
     executiveLog.key = token;
-    //executiveLog.ulog_privs = 'ADMIN';
+    executiveLog.user_type = executive.user_type;
 
     const userLogRepository = AppDataSource.getRepository(ExecutiveLog);
     await userLogRepository.save(executiveLog);
@@ -46,37 +47,6 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-
-
-export const addExecutive = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-
-
-
-  try {
-    const executive = new Executive();
-    executive.email = email;
-    executive.password = password;
-    await requestDataValidation(executive)
-    // const errors = await validate(executive);
-    // if (errors.length > 0) {
-    //   const errorMessages = errors.map(error => {
-    //     if (error.constraints) {
-    //       return Object.values(error.constraints);
-    //     }
-    //     return [];
-    //   }).flat();
-    //   return res.status(400).json({ message: 'Invalid executive data', errors: errorMessages });
-    // }
-
-    const executiveRepository = AppDataSource.getRepository(Executive);
-    await executiveRepository.save(executive);
-
-    res.status(201).json({ message: 'Executive Added successfully', executive });
-  } catch (e) {
-    return handleCatch(res, e);
-  }
-};
 
 export const updateTaxfileStatus = async (req: Request, res: Response) => {
   const { id, file_status, token } = req.body;
@@ -275,7 +245,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
       const message = "<h1>Please use the Given OTP for New Password</h1><br><br>OTP: " + otp;
       await sendEmail(email, subject, message);
       exec.otp = otp;
-      // await userRepository.save(user);
       await execRepo.update(exec.id, exec);
 
       return sendSuccess(res, "OTP Sent Successfully on Registered Email", {}, 201);
@@ -296,7 +265,6 @@ export const newPassword = async (req: Request, res: Response) => {
     if (exec) {
       exec.password = newPassword;
       exec.otp = '';
-      // await userRepository.save(user);
       await execRepo.update(exec.id, exec);
 
       return sendSuccess(res, "Password Changed Successfully", {}, 201);
@@ -309,6 +277,123 @@ export const newPassword = async (req: Request, res: Response) => {
   }
 };
 
+
+export const updatePassword = async (req: Request, res: Response) => {
+
+  const execId = req?.execId;
+
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+
+    const execRepo = AppDataSource.getRepository(Executive);
+    const exec = await execRepo.findOne({ where: { id: execId, password: oldPassword, id_status: "ACTIVE" } });
+    if (exec) {
+      exec.password = newPassword;
+      await execRepo.update(exec.id, exec);
+
+      return sendSuccess(res, "Password Updated Successfully", {}, 201);
+    } else {
+      return sendError(res, "Wrong Old Password");
+    }
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+
+
+
+
+
+////////////////////////
+//QUERIES FOR ADMIN //START HERE
+////////////////////////
+
+export const addExecutive = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  try {
+    const executive = new Executive();
+    executive.email = email;
+    executive.password = password;
+    executive.user_type = "EXECUTIVE";
+    await requestDataValidation(executive);
+
+    const executiveRepository = AppDataSource.getRepository(Executive);
+    await executiveRepository.save(executive);
+
+    res.status(201).json({ message: 'Executive Added successfully', executive });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const updateExecutiveStatus = async (req: Request, res: Response) => {
+
+  const { id_status, executiveId } = req.body;
+
+  try {
+
+    const execRepo = AppDataSource.getRepository(Executive);
+    const exec = await execRepo.findOne({ where: { id: executiveId, id_status: "ACTIVE", is_deleted: true } });
+    if (exec) {
+      exec.id_status = id_status;
+      await execRepo.update(exec.id, exec);
+
+      return sendSuccess(res, "Status Updated Successfully", {}, 201);
+    } else {
+      return sendError(res, "Wrong Executive Id");
+    }
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+export const executivesList = async (req: Request, res: Response) => {
+  try {
+    const execRepo = AppDataSource.getRepository(Taxfile);
+    const execList = await execRepo.find();
+
+    return sendSuccess(res, "Executives Fetched Successfully", { execList }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const addTemplate = async (req: Request, res: Response) => {
+  const { code, title, description } = req.body;
+
+  try {
+    const templates = new Templates();
+    templates.code = code;
+    templates.title = title;
+    templates.description = description;
+    await requestDataValidation(templates);
+
+    const tempRepo = AppDataSource.getRepository(Templates);
+    await tempRepo.save(templates);
+
+    res.status(201).json({ message: 'Template Added successfully', templates });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const templatesList = async (req: Request, res: Response) => {
+  try {
+    const tempRepo = AppDataSource.getRepository(Templates);
+    const tempList = await tempRepo.find();
+
+    return sendSuccess(res, "Templates Fetched Successfully", { tempList }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
 
 
 

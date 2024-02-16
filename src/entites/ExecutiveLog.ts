@@ -12,6 +12,9 @@ export class ExecutiveLog {
     @Column()
     key: string;
 
+    @Column()
+    user_type: string;
+
     @Column({ length: 10 })
     privs: string;
 
