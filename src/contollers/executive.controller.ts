@@ -9,8 +9,9 @@ import { TaxfileStatus } from '../entites/TaxfileStatus';
 import { TaxfileStatusLog } from '../entites/TaxfileStatusLog';
 import { UserLog } from '../entites/UserLog';
 import { Messages } from '../entites/messages';
-import { handleCatch, requestDataValidation, sendSuccess } from '../utils/responseHanlder';
+import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { Documents } from '../entites/Documents';
+import { sendEmail } from '../utils/sendMail';
 
 
 
@@ -257,6 +258,51 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     taxfileMod.documents = documentsWithPath;
 
     res.status(200).json({ message: 'Success', taxfile: taxfileMod });
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  try {
+    const execRepo = AppDataSource.getRepository(Executive);
+    const exec = await execRepo.findOne({ where: { email: email, id_status: "ACTIVE" } });
+    if (exec) {
+      const subject = "Edutax: Forgot Pasword";
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const message = "<h1>Please use the Given OTP for New Password</h1><br><br>OTP: " + otp;
+      await sendEmail(email, subject, message);
+      exec.otp = otp;
+      // await userRepository.save(user);
+      await execRepo.update(exec.id, exec);
+
+      return sendSuccess(res, "OTP Sent Successfully on Registered Email", {}, 201);
+    } else {
+      return sendError(res, "Wrong Email");
+    }
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const newPassword = async (req: Request, res: Response) => {
+  const { email, otp, newPassword } = req.body;
+  try {
+    const execRepo = AppDataSource.getRepository(Executive);
+    const exec = await execRepo.findOne({ where: { email: email, otp: otp, id_status: "ACTIVE" } });
+    if (exec) {
+      exec.password = newPassword;
+      exec.otp = '';
+      // await userRepository.save(user);
+      await execRepo.update(exec.id, exec);
+
+      return sendSuccess(res, "Password Changed Successfully", {}, 201);
+    } else {
+      return sendError(res, "Wrong Email/Otp");
+    }
 
   } catch (e) {
     return handleCatch(res, e);

@@ -23,9 +23,14 @@ export class Executive {
     @Column({ type: 'boolean', default: false })
     is_deleted: boolean;
 
+    @Column()
+    otp: string;
+
+    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED'] })
+    verify_status: string;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    created_on: Date;
+    added_on: Date;
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     deleted_on: Date | null;
