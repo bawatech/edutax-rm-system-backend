@@ -10,6 +10,9 @@ import { Messages } from '../entites/messages';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { Profile } from '../entites/Profile';
 import { FindOneOptions } from 'typeorm';
+import { MaritalStatus } from '../entites/MaritalStatus';
+import { Provinces } from '../entites/Provinces';
+import { DocumentTypes } from '../entites/DocumentTypes';
 
 
 
@@ -69,6 +72,8 @@ export const addTaxfile = async (req: Request, res: Response) => {
   // Handle array of files
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
+  console.log("filesssssssssssssssss",files)
+
   const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
 
   try {
@@ -104,7 +109,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.moved_to_canada = moved_to_canada;
     taxfile.date_of_entry = date_of_entry;
     taxfile.direct_deposit_cra = direct_deposit_cra;
-    taxfile.document_direct_deposit_cra = singleFile?.originalname ?? ''; //the expression evaluates to '' (an empty string)
+    taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
     taxfile.added_by = userId;
 
     await requestDataValidation(taxfile)
@@ -115,8 +120,8 @@ export const addTaxfile = async (req: Request, res: Response) => {
     if (!savedTaxfile) {
       for (const file of files) {
         let filepathfull = null;
-        if (file.originalname) {
-          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
+        if (file.filename) {
+          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
           if (filepathfull != null) {
             fs.unlinkSync(filepathfull);
           }
@@ -124,8 +129,8 @@ export const addTaxfile = async (req: Request, res: Response) => {
       }
 
       let singleFileFullPath = null;
-      if (singleFile?.originalname) {
-        singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.originalname);
+      if (singleFile?.filename) {
+        singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
         if (singleFileFullPath != null) {
           fs.unlinkSync(singleFileFullPath);
         }
@@ -144,21 +149,21 @@ export const addTaxfile = async (req: Request, res: Response) => {
       document.taxfile_id_fk = taxfileId;
       document.user_id_fk = userId;
       document.type_id_fk = typeId;
-      let file_name = file.originalname;
+      let file_name = file.filename;
       document.filename = file_name;
       const saveDocument = await documentRepository.save(document);
       if (!saveDocument) {
         let filepathfull = null;
-        if (file.originalname) {
-          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
+        if (file.filename) {
+          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
           if (filepathfull != null) {
             fs.unlinkSync(filepathfull);
           }
         }
 
         let singleFileFullPath = null;
-        if (singleFile?.originalname) {
-          singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.originalname);
+        if (singleFile?.filename) {
+          singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
           if (singleFileFullPath != null) {
             fs.unlinkSync(singleFileFullPath);
           }
@@ -172,8 +177,8 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
     for (const file of files) {
       let filepathfull = null;
-      if (file.originalname) {
-        filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
+      if (file.filename) {
+        filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
         if (filepathfull != null) {
           fs.unlinkSync(filepathfull);
         }
@@ -181,8 +186,8 @@ export const addTaxfile = async (req: Request, res: Response) => {
     }
 
     let singleFileFullPath = null;
-    if (singleFile?.originalname) {
-      singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.originalname);
+    if (singleFile?.filename) {
+      singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
       if (singleFileFullPath != null) {
         fs.unlinkSync(singleFileFullPath);
       }
@@ -228,8 +233,8 @@ export const addTaxfile = async (req: Request, res: Response) => {
 //       const files: Express.Multer.File[] = req.files as Express.Multer.File[];
 //       for (const file of files) {
 //         let filepathfull = null;
-//         if (file.originalname) {
-//           filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
+//         if (file.filename) {
+//           filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
 //           if (filepathfull != null) {
 //             fs.unlinkSync(filepathfull);
 //           }
@@ -249,13 +254,13 @@ export const addTaxfile = async (req: Request, res: Response) => {
 //       document.taxfile_id_fk = taxfileId;
 //       document.user_id_fk = userId;
 //       document.type_id_fk = typeId;
-//       let file_name = file.originalname;
+//       let file_name = file.filename;
 //       document.filename = file_name;
 //       const saveDocument = await documentRepository.save(document);
 //       if (!saveDocument) {
 //         let filepathfull = null;
-//         if (file.originalname) {
-//           filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
+//         if (file.filename) {
+//           filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
 //           if (filepathfull != null) {
 //             fs.unlinkSync(filepathfull);
 //           }
@@ -272,8 +277,8 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 //     for (const file of files) {
 //       let filepathfull = null;
-//       if (file.originalname) {
-//         filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.originalname);
+//       if (file.filename) {
+//         filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
 //         if (filepathfull != null) {
 //           fs.unlinkSync(filepathfull);
 //         }
@@ -462,3 +467,45 @@ export const getClientMessages = async (req: Request, res: Response) => {
     return handleCatch(res, e);
   }
 };
+
+
+
+
+////////////////////////
+//ROUTES FOR MASTERS //START HERE
+////////////////////////
+
+export const getMaritalStatus = async (req: Request, res: Response) => {
+  try {
+    const maritalStatusRepo = AppDataSource.getRepository(MaritalStatus);
+    const maritalStatusList = await maritalStatusRepo.find();
+
+    return sendSuccess(res, "Marital Status Fetched Successfully", { maritalStatusList }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+export const getProvinces = async (req: Request, res: Response) => {
+  try {
+    const provincesRepo = AppDataSource.getRepository(Provinces);
+    const provincesList = await provincesRepo.find();
+
+    return sendSuccess(res, "Provinces Fetched Successfully", { provincesList }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const getDocumentTypes = async (req: Request, res: Response) => {
+  try {
+    const documentTypesRepo = AppDataSource.getRepository(DocumentTypes);
+    const documentTypesList = await documentTypesRepo.find();
+
+    return sendSuccess(res, "Document Types Fetched Successfully", { documentTypesList }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
