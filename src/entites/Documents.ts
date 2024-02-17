@@ -17,6 +17,9 @@ export class Documents {
     @Column()
     filename: string;
 
+    @Column({ type: 'boolean', default: false })
+    is_deleted: boolean;
+
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     added_on: Date;
 

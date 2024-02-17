@@ -52,7 +52,7 @@ export const createProfile = async (req: Request, res: Response) => {
     profile.city = city;
     profile.province = province;
     profile.postal_code = postal_code;
-    profile.mobile_number = mobile_number;
+    profile.mobile_number = mobile_number?.replace(/\D/g,'')?.slice(-10);
     profile.added_by = userId;
 
     await requestDataValidation(profile)
@@ -66,22 +66,18 @@ export const createProfile = async (req: Request, res: Response) => {
   }
 };
 
+
+
 export const addTaxfile = async (req: Request, res: Response) => {
   const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra } = req.body;
 
   // Handle array of files
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
-  console.log("filesssssssssssssssss",files)
-
   const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
 
   try {
     const userId = req?.userId;
-
-    if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
-      return res.status(400).json({ message: 'Files are required' });
-    }
 
     const profileRepo = AppDataSource.getRepository(Profile);
     const profile = await profileRepo.findOne({
@@ -91,7 +87,6 @@ export const addTaxfile = async (req: Request, res: Response) => {
     if (!profile) {
       return sendError(res, "Profile Not Found");
     }
-
 
     const taxfile = new Taxfile();
     taxfile.profile_id_fk = profile.id
@@ -113,6 +108,10 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.added_by = userId;
 
     await requestDataValidation(taxfile)
+
+    if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
+      return res.status(400).json({ message: 'Files are required' });
+    }
 
     const returnsRepository = AppDataSource.getRepository(Taxfile);
     const savedTaxfile = await returnsRepository.save(taxfile);
@@ -169,6 +168,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
           }
         }
       }
+      
     }
     //documents - end here
 
@@ -293,46 +293,121 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 
 export const updateTaxfile = async (req: Request, res: Response) => {
-  const { id, token, firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, tax_year } = req.body;
+  const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra, taxfile_id } = req.body;
+
+  // Handle array of files
+  const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
+
+  const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
 
   try {
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
-    }
+    const userId = req?.userId;
 
-    const userLogRepository = AppDataSource.getRepository(UserLog);
-    const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false } });
-    if (!userLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
-
-    const userId = userLog.user_id_fk;
-
-    const returnsRepository = AppDataSource.getRepository(Taxfile);
-    const taxfile = await returnsRepository.findOne({ where: { id: id } });
+    const taxfileRepo = AppDataSource.getRepository(Taxfile);
+    const taxfile = await taxfileRepo.findOne({ where: { added_by: userId, id: taxfile_id } });
     if (!taxfile) {
-      return res.status(400).json({ message: 'Taxfile not found' });
+      return sendError(res, "Taxfile Not Found");
     }
 
-    // Update taxfile properties
-    taxfile.firstname = firstname;
-    taxfile.lastname = lastname;
-    taxfile.date_of_birth = date_of_birth;
-    taxfile.marital_status = marital_status;
-    taxfile.street_name = street_name;
-    taxfile.city = city;
-    taxfile.province = province;
-    taxfile.postal_code = postal_code;
-    taxfile.mobile_number = mobile_number;
     taxfile.tax_year = tax_year;
-    taxfile.updated_by = userId;
+    taxfile.taxfile_province = taxfile_province;
+    taxfile.moved_to_canada = moved_to_canada;
+    taxfile.date_of_entry = date_of_entry;
+    taxfile.direct_deposit_cra = direct_deposit_cra;
+    taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
+    taxfile.added_by = userId;
 
     await requestDataValidation(taxfile)
 
-    await returnsRepository.save(taxfile);
+    if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
+      return res.status(400).json({ message: 'Files are required' });
+    }
 
-    res.status(200).json({ message: 'Taxfile updated successfully', taxfile });
+    const savedTaxfile = await taxfileRepo.update(taxfile.id, taxfile);
+
+    if (!savedTaxfile) {
+      for (const file of files) {
+        let filepathfull = null;
+        if (file.filename) {
+          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
+          if (filepathfull != null) {
+            fs.unlinkSync(filepathfull);
+          }
+        }
+      }
+
+      let singleFileFullPath = null;
+      if (singleFile?.filename) {
+        singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
+        if (singleFileFullPath != null) {
+          fs.unlinkSync(singleFileFullPath);
+        }
+      }
+      return sendError(res, "Data Not Updated");
+    }
+
+    //documents - start here
+    const documentRepository = AppDataSource.getRepository(Documents);
+    await documentRepository
+      .createQueryBuilder()
+      .update(Documents)
+      .set({ is_deleted: true })
+      .where('taxfile_id_fk = :taxfileId', { taxfileId: taxfile_id })
+      .andWhere('user_id_fk = :userId', { userId: userId })
+      .execute();
+
+
+    for (let i = 0; i < documents.length; i++) {
+      const file = files[i];
+      const typeId = documents[i]['typeid'];
+      const document = new Documents();
+      document.taxfile_id_fk = taxfile_id;
+      document.user_id_fk = userId;
+      document.type_id_fk = typeId;
+      let file_name = file.filename;
+      document.filename = file_name;
+      const saveDocument = await documentRepository.save(document);
+      if (!saveDocument) {
+        let filepathfull = null;
+        if (file.filename) {
+          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
+          if (filepathfull != null) {
+            fs.unlinkSync(filepathfull);
+          }
+        }
+
+        let singleFileFullPath = null;
+        if (singleFile?.filename) {
+          singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
+          if (singleFileFullPath != null) {
+            fs.unlinkSync(singleFileFullPath);
+          }
+        }
+      }
+    }
+    //documents - end here
+
+    res.status(201).json({ message: 'Taxfile Updated successfully', taxfile });
   } catch (e) {
+
+    for (const file of files) {
+      let filepathfull = null;
+      if (file.filename) {
+        filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
+        if (filepathfull != null) {
+          fs.unlinkSync(filepathfull);
+        }
+      }
+    }
+
+    let singleFileFullPath = null;
+    if (singleFile?.filename) {
+      singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
+      if (singleFileFullPath != null) {
+        fs.unlinkSync(singleFileFullPath);
+      }
+    }
+
     return handleCatch(res, e);
   }
 };
@@ -369,7 +444,7 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 
     const base_url = process.env.BASE_URL;
 
-    const taxfileMod = {...taxfile[0],document_direct_deposit_cra:`${base_url}/storage/documents/${taxfile[0].document_direct_deposit_cra}`}
+    const taxfileMod = { ...taxfile[0], document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile[0].document_direct_deposit_cra}` }
     // const uploadDir = path.join(__dirname, '..', '..', 'storage', 'documents');
 
     // const documentsWithPath = documents.map(doc => ({
@@ -382,7 +457,7 @@ export const taxFileDetails = async (req: Request, res: Response) => {
     }));
 
     taxfileMod.documents = documentsWithPath;
-console.log("taxfileModtaxfileMod",taxfileMod)
+    console.log("taxfileModtaxfileMod", taxfileMod)
     res.status(200).json({ message: 'Success', taxfile: taxfileMod });
   } catch (e) {
     return handleCatch(res, e);
