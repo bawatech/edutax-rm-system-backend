@@ -43,8 +43,14 @@ export const updateProfile = async (req: Request, res: Response) => {
     const userId = req?.userId;
     //const dobDate = new Date(date_of_birth);
     const userRepo = AppDataSource.getRepository(User)
+    const profileRepo = AppDataSource.getRepository(Profile)
     const user = await userRepo.findOne({ where: { id: userId} });
-    const profile = new Profile();
+    let profile = await profileRepo.findOne({where:{user:{id:user?.id}}});
+
+    if(!profile){
+      profile = new Profile();
+    }
+
     profile.firstname = firstname;
     profile.lastname = lastname;
     profile.date_of_birth = date_of_birth;
@@ -60,7 +66,6 @@ export const updateProfile = async (req: Request, res: Response) => {
 
     await requestDataValidation(profile)
 
-    const profileRepo = AppDataSource.getRepository(Profile);
     await profileRepo.save(profile);
 
     res.status(201).json({ message: 'Profile Created successfully', profile });
@@ -69,6 +74,20 @@ export const updateProfile = async (req: Request, res: Response) => {
   }
 };
 
+
+export const getProfile = async (req: Request, res: Response) => {
+
+  try {
+    const userId = req?.userId;
+    const profileRepo = AppDataSource.getRepository(Profile)
+    let profile = await profileRepo.findOne({where:{user:{id:userId}}});
+      sendSuccess(res,"Success",{profile})
+
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
 
 
 export const addTaxfile = async (req: Request, res: Response) => {
@@ -467,7 +486,25 @@ export const taxFileDetails = async (req: Request, res: Response) => {
   }
 };
 
+export const taxFileList = async (req: Request, res: Response) => {
 
+  try {
+    const id = parseInt(req?.params?.id)
+    const userId = req?.userId;
+    // console.log("iiiiiiiiiiiiiiiiiiiiiiii",id)
+    // console.log("userIduserId",userId)
+    const taxRepo = AppDataSource.getRepository(Taxfile);
+    const taxfiles = await taxRepo.find();
+
+    if (!taxfiles) {
+      return sendError(res,"No record found")
+    }
+
+    res.status(200).json({ message: 'Success', taxfiles });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
 
 export const addClientMessage = async (req: Request, res: Response) => {
   const { message, taxfile_id } = req.body;

@@ -99,6 +99,15 @@ export const verifyEmail = async (req: Request, res: Response) => {
   }
 };
 
+export const logout = async (req: Request, res: Response) => {
+
+  try {
+    return sendSuccess(res, "Logged out Successfully", {}, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
 export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body;
   try {

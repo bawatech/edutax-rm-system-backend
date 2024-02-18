@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProvinces, taxFileDetails, updateProfile, updateTaxfile } from "../contollers/user.controller";
+import { addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, taxFileDetails, updateProfile, updateTaxfile } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
 import { clientAuth } from "../middlewares/clientAuth";
+import { taxfilesList } from "../contollers/executive.controller";
 
 const router = Router();
 
@@ -50,10 +51,13 @@ router.route("/").post((req, res) => {
 });
 
 router.post("/add-taxfile", clientAuth, upload.any(), addTaxfile);
+router.post("/taxfile", clientAuth, upload.any(), addTaxfile);
+router.get("/taxfile", clientAuth, upload.any(), taxfilesList);
+router.route("/taxfile-details/:id").get(clientAuth, taxFileDetails);
 
 router.post("/update-taxfile", clientAuth, upload.any(), updateTaxfile);
 
-router.route("/taxfile-details/:id").get(clientAuth, taxFileDetails);
+
 
 //router.route("/upload-documents").post(upload.any(), uploadDocuments);
 
@@ -62,6 +66,7 @@ router.route("/add-client-message").post(clientAuth, addClientMessage);
 router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
 
 router.put("/profile", clientAuth, updateProfile);
+router.get("/profile", clientAuth, getProfile);
 
 
 
