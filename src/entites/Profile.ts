@@ -3,6 +3,7 @@ import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "cl
 // import { isValidPhoneNumber } from 'libphonenumber-js';
 import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
 import { User } from "./User";
+import { IsSin } from "./dataValidations/isSin";
 
 @Entity()
 export class Profile {
@@ -25,6 +26,10 @@ export class Profile {
         message: 'The date must be in the correct format',
     })
     date_of_birth: Date;
+
+    @Column()
+    @IsSin()
+    sin: string;
 
     @Column()
     @IsMaritalStatus()
@@ -55,6 +60,7 @@ export class Profile {
     })
     mobile_number: string;
 
+
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     added_on: Date;
 
@@ -68,12 +74,7 @@ export class Profile {
     updated_by: number;
 
     @OneToOne(() => User)
-    @JoinColumn({name:'user_id'})
-    user:User | null
+    @JoinColumn({ name: 'user_id' })
+    user: User | null
 
-    // @BeforeInsert()
-    // @BeforeUpdate()
-    // async validateBeforeSave() {
-    //     this.validate();
-    // }
 }

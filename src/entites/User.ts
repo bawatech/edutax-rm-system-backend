@@ -19,9 +19,6 @@ export class User {
     email: string;
 
     @Column()
-    age: number;
-
-    @Column()
     otp: string;
 
     @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED'] })
@@ -32,6 +29,18 @@ export class User {
 
     @Column({ type: 'boolean', default: false })
     is_deleted: boolean;
+
+    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'ACCEPTED'] })
+    spouse_invite_status: string;
+
+    @Column({ type: "text" })
+    spouse_invite_token: string;
+
+    @Column()
+    spouse_email: string;
+
+    @Column()
+    spouse_id: number;
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     created_on: Date;
