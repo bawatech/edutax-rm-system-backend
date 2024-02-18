@@ -81,7 +81,7 @@ export const getProfile = async (req: Request, res: Response) => {
   try {
     const userId = req?.userId;
     const profileRepo = AppDataSource.getRepository(Profile)
-    let profile = await profileRepo.findOne({where:{user:{id:userId}},relations: ['user','marital_status_detail']});
+    let profile = await profileRepo.findOne({where:{user:{id:userId}},relations: ['user','marital_status_detail','province_detail']});
       sendSuccess(res,"Success",{profile})
 
 

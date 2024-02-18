@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToOne, JoinTable } from "typeorm";
 import { IsEmail, Length } from "class-validator";
 import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 import { Executive } from "./Executive";
@@ -31,5 +31,13 @@ export class Messages {
     // @ManyToOne(type => Executive)
     // @JoinColumn({ name: 'id' }) // Specify the foreign key column
     // executive: Executive; // This property represents the association with the Executive entity
+
+    // @OneToOne(type => Executive, userTable => userTable.user_type)
+    // @JoinTable({
+    //     name: "Executive", // name of the intermediate table
+    //     joinColumn: { name: "user_type", referencedColumnName: "user_type" }, // join column of the source entity
+    //     inverseJoinColumn: { name: "added_by", referencedColumnName: "added_by" } // join column of the target entity
+    // })
+    // userTable: Executive;
 
 }

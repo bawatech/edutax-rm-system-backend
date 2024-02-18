@@ -1,11 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, Column, PrimaryColumn } from "typeorm";
 
-@Entity({ name: "provinces" }) // Set the table name explicitly
+@Entity({ name: "provinces" })
 export class Provinces {
-    @PrimaryGeneratedColumn()
-    id: number;
+    // @PrimaryGeneratedColumn()
+    // id: number;
 
-    @Column({ length: 255 })
+    @PrimaryColumn()
     code: string;
 
     @Column({ length: 255 })

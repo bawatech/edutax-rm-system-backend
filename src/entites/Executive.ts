@@ -9,6 +9,9 @@ export class Executive {
     id: number
 
     @Column()
+    name: string
+
+    @Column()
     @IsEmail()
     @IsUniqueExecutive()
     email: string;
