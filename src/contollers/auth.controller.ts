@@ -5,6 +5,7 @@ import { AppDataSource } from '../AppDataSource';
 import { v4 as uuidv4 } from 'uuid';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { sendEmail } from '../utils/sendMail';
+import { Profile } from '../entites/Profile';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -62,8 +63,10 @@ export const login = async (req: Request, res: Response) => {
     userLog.key = token;
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
+    const profileRepo = AppDataSource.getRepository(Profile)
+    const profile = profileRepo.findOne({where:{user:{id:user?.id}}})
 
-    return sendSuccess(res, "LoggedIn successfully", { token });
+    return sendSuccess(res, "LoggedIn successfully", { token,user,profile });
   } catch (e) {
     return handleCatch(res, e);
   }

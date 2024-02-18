@@ -36,13 +36,14 @@ export const createUser = async (req: Request, res: Response) => {
 };
 
 
-export const createProfile = async (req: Request, res: Response) => {
+export const updateProfile = async (req: Request, res: Response) => {
   const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number } = req.body;
 
   try {
     const userId = req?.userId;
     //const dobDate = new Date(date_of_birth);
-
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await userRepo.findOne({ where: { id: userId} });
     const profile = new Profile();
     profile.firstname = firstname;
     profile.lastname = lastname;
@@ -54,6 +55,8 @@ export const createProfile = async (req: Request, res: Response) => {
     profile.postal_code = postal_code;
     profile.mobile_number = mobile_number?.replace(/\D/g,'')?.slice(-10);
     profile.added_by = userId;
+    profile.added_by = userId;
+    profile.user = user!;
 
     await requestDataValidation(profile)
 

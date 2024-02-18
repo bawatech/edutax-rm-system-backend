@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addClientMessage, addTaxfile, createProfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProvinces, taxFileDetails, updateTaxfile } from "../contollers/user.controller";
+import { addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProvinces, taxFileDetails, updateProfile, updateTaxfile } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -61,7 +61,7 @@ router.route("/add-client-message").post(clientAuth, addClientMessage);
 
 router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
 
-router.post("/create-profile", clientAuth, createProfile);
+router.put("/profile", clientAuth, updateProfile);
 
 
 

@@ -39,6 +39,4 @@ export class User {
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     deleted_on: Date | null;
 
-
-
 }

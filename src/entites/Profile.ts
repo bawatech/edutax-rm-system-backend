@@ -1,7 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, OneToOne, JoinColumn } from "typeorm";
 import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "class-validator";
 // import { isValidPhoneNumber } from 'libphonenumber-js';
 import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
+import { User } from "./User";
 
 @Entity()
 export class Profile {
@@ -65,6 +66,10 @@ export class Profile {
 
     @Column()
     updated_by: number;
+
+    @OneToOne(() => User)
+    @JoinColumn({name:'user_id'})
+    user:User | null
 
     // @BeforeInsert()
     // @BeforeUpdate()
