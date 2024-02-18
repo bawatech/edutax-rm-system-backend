@@ -9,9 +9,9 @@ router.route("/login").post(login);
 
 router.route("/update-taxfile-status").post(executiveAuth, updateTaxfileStatus);
 
-router.route("/add-executive-message").post(executiveAuth, addExecutiveMessage);
+router.route("/taxfile/chat").post(executiveAuth, addExecutiveMessage);
 
-router.route("/get-executive-messages/:id").get(executiveAuth, getExecutiveMessages);
+router.route("/taxfile/chat/:id").get(executiveAuth, getExecutiveMessages);
 
 router.route("/taxfiles-list").post(executiveAuth, taxfilesList);
 

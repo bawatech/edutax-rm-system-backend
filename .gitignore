@@ -4,3 +4,4 @@ coverage
 package-lock.json
 .vercel
 env.config
+storage
