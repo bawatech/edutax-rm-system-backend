@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProvinces, taxFileDetails, updateProfile, updateTaxfile } from "../contollers/user.controller";
+import { acceptSpouseInvitation, addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProvinces, sendSpouseInvitation, taxFileDetails, updateProfile, updateTaxfile } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
     const originalname = file.originalname || 'unknown';;
     const extension = (originalname.split('.').pop() || '').toLowerCase();
 
-   if (!allowedExtensions.includes(extension)) {
+    if (!allowedExtensions.includes(extension)) {
       return cb(null, JSON.stringify({ error: 'Invalid file type. Only JPG, JPEG, PNG, and PDF files are allowed.' }));
     }
     const currentDate = new Date().toISOString().slice(0, 10);
@@ -62,6 +62,10 @@ router.route("/add-client-message").post(clientAuth, addClientMessage);
 router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
 
 router.put("/profile", clientAuth, updateProfile);
+
+router.route("/send-invitation").post(clientAuth, sendSpouseInvitation);
+
+router.route("/accept-invitation/:token").get(acceptSpouseInvitation);
 
 
 

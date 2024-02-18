@@ -9,11 +9,12 @@ import path from "path";
 import { Messages } from '../entites/messages';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { Profile } from '../entites/Profile';
-import { FindOneOptions } from 'typeorm';
+import { FindOneOptions, Not } from 'typeorm';
 import { MaritalStatus } from '../entites/MaritalStatus';
 import { Provinces } from '../entites/Provinces';
 import { DocumentTypes } from '../entites/DocumentTypes';
-
+import { sendEmail } from '../utils/sendMail';
+import { v4 as uuidv4 } from 'uuid';
 
 
 
@@ -43,7 +44,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     const userId = req?.userId;
     //const dobDate = new Date(date_of_birth);
     const userRepo = AppDataSource.getRepository(User)
-    const user = await userRepo.findOne({ where: { id: userId} });
+    const user = await userRepo.findOne({ where: { id: userId } });
     const profile = new Profile();
     profile.firstname = firstname;
     profile.lastname = lastname;
@@ -53,7 +54,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     profile.city = city;
     profile.province = province;
     profile.postal_code = postal_code;
-    profile.mobile_number = mobile_number?.replace(/\D/g,'')?.slice(-10);
+    profile.mobile_number = mobile_number?.replace(/\D/g, '')?.slice(-10);
     profile.added_by = userId;
     profile.added_by = userId;
     profile.user = user!;
@@ -171,7 +172,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
           }
         }
       }
-      
+
     }
     //documents - end here
 
@@ -587,3 +588,118 @@ export const getDocumentTypes = async (req: Request, res: Response) => {
   }
 };
 
+
+
+export const sendSpouseInvitation = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const userId = req?.userId;
+  try {
+
+    const spouseRepo = AppDataSource.getRepository(User);
+    const existingSpouse = await spouseRepo.findOne({ where: { email: email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: Not(userId), spouse_invite_status: "PENDING" } });
+    if (!existingSpouse) {
+      return sendError(res, "Spouse Not Found/Verification Pending/Already Linked");
+    };
+
+    const userRepo = AppDataSource.getRepository(User);
+    const existingUser = await userRepo.findOne({ where: { verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: userId, spouse_invite_status: "PENDING" } });
+    if (!existingUser) {
+      return sendError(res, "Verification Pending/Id Inactive/Already Linked to Spouse");
+    };
+
+    const spouse_id = existingSpouse.id;
+    const spouse_email = existingSpouse.email;
+
+    // const spouseProfileRepo = AppDataSource.getRepository(Profile);
+    // const spouseProfile = await spouseProfileRepo.findOne({
+    //   where: { added_by: spouse_id },
+    //   order: { added_on: 'DESC' } as FindOneOptions['order']
+    // });
+    // if (!spouseProfile) {
+    //   return sendError(res, "The Spouse Profile Not Exists");
+    // };
+
+    // const userProfileRepo = AppDataSource.getRepository(Profile);
+    // const userProfile = await userProfileRepo.findOne({
+    //   where: { added_by: userId },
+    //   order: { added_on: 'DESC' } as FindOneOptions['order']
+    // });
+    // if (!userProfile) {
+    //   return sendError(res, "Please add your Profile");
+    // };
+
+    const token = geenrateToken();
+    const base_url = process.env.BASE_URL;
+    const invitationLink = `${base_url}/user/accept-invitation/${token}`;
+
+    const subject = "Edutax: Spousal Invitation";
+    // const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const message = "<h1>Please Click on the below link to ACCEPT the Spousal Invitation</h1><br><br>Click on the given link : " + invitationLink;
+    await sendEmail(email, subject, message);
+
+    existingUser.spouse_invite_token = token;
+    existingUser.spouse_email = spouse_email;
+    existingUser.spouse_id = spouse_id;
+
+    await userRepo.update(existingUser.id, existingUser);
+
+    return sendSuccess(res, "Invitation Sent successfully.", {}, 201);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+export const acceptSpouseInvitation = async (req: Request, res: Response) => {
+  const token = req?.params?.token
+  try {
+
+    const userRepo = AppDataSource.getRepository(User);
+    const existingUser = await userRepo.findOne({ where: { verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, spouse_invite_status: "PENDING", spouse_invite_token: token } });
+    if (!existingUser) {
+      return sendError(res, "Verification Pending/Id Inactive/Already Linked to Spouse");
+    };
+
+    const spouse_id = existingUser.spouse_id;
+    const spouse_email = existingUser.spouse_email;
+    const inviteToken = existingUser.spouse_invite_token;
+
+    const user_id = existingUser.id;
+    const user_email = existingUser.email;
+
+    if (inviteToken != token) {
+      return sendError(res, "Expired/Wrong Invitation Token");
+    }
+
+    const spouseRepo = AppDataSource.getRepository(User);
+    const existingSpouse = await spouseRepo.findOne({ where: { email: spouse_email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: spouse_id, spouse_invite_status: "PENDING" } });
+    if (!existingSpouse) {
+      return sendError(res, "Spouse Not Found/Verification Pending/Already Linked");
+    };
+
+    existingUser.spouse_invite_status = "ACCEPTED";
+    await userRepo.update(existingUser.id, existingUser);
+
+    existingSpouse.spouse_email = user_email;
+    existingSpouse.spouse_id = user_id;
+    existingSpouse.spouse_invite_status = "ACCEPTED";
+    await spouseRepo.update(existingSpouse.id, existingSpouse);
+
+    return sendSuccess(res, "Spouse Linked successfully.", {}, 201);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+
+
+
+
+
+
+const geenrateToken = () => {
+  return uuidv4();
+}

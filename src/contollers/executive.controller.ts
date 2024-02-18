@@ -356,7 +356,7 @@ export const updateExecutiveStatus = async (req: Request, res: Response) => {
 
 export const executivesList = async (req: Request, res: Response) => {
   try {
-    const execRepo = AppDataSource.getRepository(Taxfile);
+    const execRepo = AppDataSource.getRepository(Executive);
     const execList = await execRepo.find();
 
     return sendSuccess(res, "Executives Fetched Successfully", { execList }, 200);
