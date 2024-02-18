@@ -4,6 +4,7 @@ import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "cl
 import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
 import { User } from "./User";
 import { IsSin } from "./dataValidations/isSin";
+import { MaritalStatus } from "./MaritalStatus";
 
 @Entity()
 export class Profile {
@@ -31,9 +32,7 @@ export class Profile {
     @IsSin()
     sin: string;
 
-    @Column()
-    @IsMaritalStatus()
-    marital_status: string;
+  
 
     @Column()
     @IsAlphanumeric()
@@ -67,6 +66,9 @@ export class Profile {
     @Column()
     added_by: number;
 
+    @Column()
+    user_id:number;
+
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     updated_on: Date | null;
 
@@ -75,6 +77,15 @@ export class Profile {
 
     @OneToOne(() => User)
     @JoinColumn({ name: 'user_id' })
-    user: User | null
+    user: User
+
+
+    @Column()
+    @IsMaritalStatus()
+    marital_status: string;
+    
+    @OneToOne(() => MaritalStatus)
+    @JoinColumn({ name: 'marital_status' })
+    marital_status_detail: MaritalStatus
 
 }

@@ -38,7 +38,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 
 export const updateProfile = async (req: Request, res: Response) => {
-  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number } = req.body;
+  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin} = req.body;
 
   try {
     const userId = req?.userId;
@@ -50,6 +50,7 @@ export const updateProfile = async (req: Request, res: Response) => {
 
     if(!profile){
       profile = new Profile();
+      profile.added_by = userId;
     }
 
     profile.firstname = firstname;
@@ -60,9 +61,8 @@ export const updateProfile = async (req: Request, res: Response) => {
     profile.city = city;
     profile.province = province;
     profile.postal_code = postal_code;
+    profile.sin = sin;
     profile.mobile_number = mobile_number?.replace(/\D/g, '')?.slice(-10);
-    profile.added_by = userId;
-    profile.added_by = userId;
     profile.user = user!;
 
     await requestDataValidation(profile)
@@ -81,7 +81,7 @@ export const getProfile = async (req: Request, res: Response) => {
   try {
     const userId = req?.userId;
     const profileRepo = AppDataSource.getRepository(Profile)
-    let profile = await profileRepo.findOne({where:{user:{id:userId}}});
+    let profile = await profileRepo.findOne({where:{user:{id:userId}},relations: ['user','marital_status_detail']});
       sendSuccess(res,"Success",{profile})
 
 
@@ -101,11 +101,11 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
   try {
     const userId = req?.userId;
-
+    const userRepo = AppDataSource.getRepository(User)
+    const user = await userRepo.findOne({ where: { id: userId} });
     const profileRepo = AppDataSource.getRepository(Profile);
     const profile = await profileRepo.findOne({
-      where: { added_by: userId },
-      order: { added_on: 'DESC' } as FindOneOptions['order']
+      where: { user:{id:user?.id} }
     });
     if (!profile) {
       return sendError(res, "Profile Not Found");
@@ -116,7 +116,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.firstname = profile.firstname;
     taxfile.lastname = profile.lastname;
     taxfile.date_of_birth = profile.date_of_birth;
-    taxfile.marital_status = profile.marital_status;
+    // taxfile.marital_status = profile.marital_status;
     taxfile.street_name = profile.street_name;
     taxfile.city = profile.city;
     taxfile.province = profile.province;
@@ -129,6 +129,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.direct_deposit_cra = direct_deposit_cra;
     taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
     taxfile.added_by = userId;
+    taxfile.user_id = userId;
 
     await requestDataValidation(taxfile)
 
@@ -490,12 +491,10 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 export const taxFileList = async (req: Request, res: Response) => {
 
   try {
-    const id = parseInt(req?.params?.id)
     const userId = req?.userId;
-    // console.log("iiiiiiiiiiiiiiiiiiiiiiii",id)
-    // console.log("userIduserId",userId)
+
     const taxRepo = AppDataSource.getRepository(Taxfile);
-    const taxfiles = await taxRepo.find();
+    const taxfiles = await taxRepo.find({where:{user_id:userId}});
 
     if (!taxfiles) {
       return sendError(res,"No record found")

@@ -1,0 +1,30 @@
+// In your source entity, assuming it is called UserType
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinTable } from "typeorm";
+import { UserTable } from "./UserTable";
+import { AdminTable } from "./AdminTable";
+
+@Entity()
+export class UserType {
+
+    @PrimaryGeneratedColumn()
+    id: number;
+
+    @Column()
+    type: string; // This column can have values USER or ADMIN
+
+    @OneToOne(type => UserTable, userTable => userTable.userType)
+    @JoinTable({
+        name: "user_type_user_table", // name of the intermediate table
+        joinColumn: { name: "user_type_id", referencedColumnName: "id" }, // join column of the source entity
+        inverseJoinColumn: { name: "user_table_id", referencedColumnName: "id" } // join column of the target entity
+    })
+    userTable: UserTable; // This property will be populated if type is USER
+
+    @OneToOne(type => AdminTable, adminTable => adminTable.userType)
+    @JoinTable({
+        name: "user_type_admin_table", // name of the intermediate table
+        joinColumn: { name: "user_type_id", referencedColumnName: "id" }, // join column of the source entity
+        inverseJoinColumn: { name: "admin_table_id", referencedColumnName: "id" } // join column of the target entity
+    })
+    adminTable: AdminTable; // This property will be populated if type is ADMIN
+}

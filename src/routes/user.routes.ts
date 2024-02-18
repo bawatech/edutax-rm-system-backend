@@ -53,7 +53,7 @@ router.route("/").post((req, res) => {
 router.post("/add-taxfile", clientAuth, upload.any(), addTaxfile);
 router.post("/taxfile", clientAuth, upload.any(), addTaxfile);
 router.get("/taxfile", clientAuth, upload.any(), taxfilesList);
-router.route("/taxfile-details/:id").get(clientAuth, taxFileDetails);
+router.get("/taxfile/:id",clientAuth, taxFileDetails);
 
 router.post("/update-taxfile", clientAuth, upload.any(), updateTaxfile);
 

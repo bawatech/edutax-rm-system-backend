@@ -81,6 +81,9 @@ export class Taxfile {
     updated_by: number;
 
 
+    @Column()
+    user_id: number;
+
     // @BeforeInsert()
     // @BeforeUpdate()
     // async validateBeforeSave() {

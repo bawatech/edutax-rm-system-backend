@@ -1,11 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, Column, PrimaryColumn } from "typeorm";
 
-@Entity({ name: "marital_status" }) // Set the table name explicitly
+@Entity({ name: "marital_status" })
 export class MaritalStatus {
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
+    
+    @PrimaryColumn()
     code: string;
 
     @Column({ length: 255 })
