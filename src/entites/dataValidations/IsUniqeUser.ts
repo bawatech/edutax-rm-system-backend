@@ -12,7 +12,7 @@ import { AppDataSource } from '../../AppDataSource';
 export class IsUniqueUserConstraint implements ValidatorConstraintInterface {
   async validate(userEmail: any, args: ValidationArguments) {
     const userRepository = AppDataSource.getRepository(User);
-    const existingUser = await userRepository.findOne({ where: { email: userEmail, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false } });
+    const existingUser = await userRepository.findOne({ where: { email: userEmail, verify_status: "VERIFIED"} });
     if (existingUser) return false;
     return true;
   }

@@ -14,12 +14,12 @@ export class Profile {
 
     @Column()
     // @IsOptional()
-    @IsAlphanumeric()
+    // @IsAlphanumeric()
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     firstname: string;
 
     @Column()
-    @IsAlphanumeric()
+    // @IsAlphanumeric()
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     lastname: string;
 
@@ -33,20 +33,21 @@ export class Profile {
     @IsSin()
     sin: string;
 
-
+    @Column()
+    street_number: string;
 
     @Column()
-    @IsAlphanumeric()
+    // @IsAlphanumeric()
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     street_name: string;
 
     @Column()
-    @IsAlphanumeric()
+    // @IsAlphanumeric()
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     city: string;
 
     @Column({ length: 100 })
-    @IsAlphanumeric()
+    // @IsAlphanumeric()
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     province: string;
 

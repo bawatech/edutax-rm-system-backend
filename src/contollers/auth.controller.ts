@@ -14,25 +14,34 @@ export const signUp = async (req: Request, res: Response) => {
     const user = new User();
     user.email = email;
     user.password = password;
+    await requestDataValidation(user);
 
-
-
-    await requestDataValidation(user)
     const userRepository = AppDataSource.getRepository(User);
+    const existingUser: any = await userRepository.findOne({ where: { email: email, verify_status: "PENDING" } });
+    let saveNewUser = true;
+    if (existingUser) {
+      saveNewUser = false;
+    }
+
     const subject = "Edutax: Verify Email Address";
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const message = "<h1>Please use the Given OTP to verify Your Email Address</h1><br><br>OTP: " + otp;
     await sendEmail(email, subject, message);
-    user.otp = otp;
-    const newUser = await userRepository.save(user);
 
     const token = geenrateToken();
-    const userLog = new UserLog();
-    userLog.user_id_fk = newUser.id;
-    userLog.key = token;
-    const userLogRepository = AppDataSource.getRepository(UserLog);
-    await userLogRepository.save(userLog);
+    if (saveNewUser == true) {
+      user.otp = otp;
+      const newUser = await userRepository.save(user);
 
+      const userLog = new UserLog();
+      userLog.user_id_fk = newUser.id;
+      userLog.key = token;
+      const userLogRepository = AppDataSource.getRepository(UserLog);
+      await userLogRepository.save(userLog);
+    } else {
+      existingUser.otp = otp;
+      await userRepository.update(existingUser.id, existingUser);
+    }
 
     return sendSuccess(res, "Signed up successfully. Please verify your Email", { token, user }, 201);
 
@@ -49,7 +58,7 @@ export const login = async (req: Request, res: Response) => {
 
   try {
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email:email,id_status:"ACTIVE" } });
+    const user = await userRepository.findOne({ where: { email: email, id_status: "ACTIVE" } });
     if (!user) {
       return sendError(res, "Invalid email");
     }
@@ -64,9 +73,9 @@ export const login = async (req: Request, res: Response) => {
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
     const profileRepo = AppDataSource.getRepository(Profile)
-    const profile = profileRepo.findOne({where:{user:{id:user?.id}}})
+    const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
 
-    return sendSuccess(res, "LoggedIn successfully", { token,user,profile });
+    return sendSuccess(res, "LoggedIn successfully", { token, user, profile });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -82,7 +91,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const userId = req?.userId;
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { otp: otp, id: userId, verify_status: "PENDING",id_status:"ACTIVE" } });
+    const user = await userRepository.findOne({ where: { otp: otp, id: userId, verify_status: "PENDING", id_status: "ACTIVE" } });
     if (user) {
       user.otp = '';
       user.verify_status = 'VERIFIED';
@@ -112,7 +121,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body;
   try {
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: email,id_status:"ACTIVE" } });
+    const user = await userRepository.findOne({ where: { email: email, id_status: "ACTIVE" } });
     if (user) {
       const subject = "Edutax: Forgot Pasword";
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -136,7 +145,7 @@ export const newPassword = async (req: Request, res: Response) => {
   const { email, otp, newPassword } = req.body;
   try {
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: email, otp: otp, id_status:"ACTIVE" } });
+    const user = await userRepository.findOne({ where: { email: email, otp: otp, id_status: "ACTIVE" } });
     if (user) {
       user.password = newPassword;
       user.otp = '';
@@ -163,7 +172,7 @@ export const updatePassword = async (req: Request, res: Response) => {
   try {
 
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { id: userId, password: oldPassword, id_status:"ACTIVE" } });
+    const user = await userRepository.findOne({ where: { id: userId, password: oldPassword, id_status: "ACTIVE" } });
     if (user) {
       user.password = newPassword;
       await userRepository.update(user.id, user);

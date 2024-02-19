@@ -6,39 +6,31 @@ import { isAdmin } from "../middlewares/isAdmin";
 const router = Router();
 
 router.route("/login").post(login);
-
-router.route("/update-taxfile-status").post(executiveAuth, updateTaxfileStatus);
-
-router.route("/taxfile/chat").post(executiveAuth, addExecutiveMessage);
-
-router.route("/taxfile/chat/:id").get(executiveAuth, getExecutiveMessages);
-
-router.route("/taxfile").post(executiveAuth, taxfilesList);
-
-router.route("/taxfile/:id").get(executiveAuth, taxfileDetail);
-
 router.route("/forgot-password").post(forgotPassword);
-
 router.route("/new-password").post(newPassword);
-
 router.route("/update-password").post(executiveAuth, updatePassword);
 
 
+// router.route("/update-taxfile-status").post(executiveAuth, );
+router.put("/taxfile/status", executiveAuth, updateTaxfileStatus);
 
 
-////////////////////////
-//ROUTES FOR ADMIN //START HERE
-////////////////////////
+router.route("/taxfile/chat").post(executiveAuth, addExecutiveMessage);
+router.route("/taxfile/chat/:id").get(executiveAuth, getExecutiveMessages);
 
-router.route("/add-executive").post(executiveAuth, isAdmin, addExecutive);
 
-router.route("/executives-list").post(executiveAuth, isAdmin, executivesList);
+router.route("/taxfile").get(executiveAuth, taxfilesList);
+router.route("/taxfile/:id").get(executiveAuth, taxfileDetail);
 
-router.route("/update-executive-status").post(executiveAuth, isAdmin, updateExecutiveStatus);
 
-router.route("/add-template").post(executiveAuth, isAdmin, addTemplate);
 
-router.route("/templates-list").post(executiveAuth, isAdmin, templatesList);
+router.route("/add").post(executiveAuth, isAdmin, addExecutive);
+router.route("/list").get(executiveAuth, isAdmin, executivesList);
+router.route("/status").put(executiveAuth, isAdmin, updateExecutiveStatus);
+
+
+router.route("/template").post(executiveAuth, isAdmin, addTemplate);
+router.route("/template").get(executiveAuth, isAdmin, templatesList);
 
 
 export default router

@@ -38,7 +38,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 
 export const updateProfile = async (req: Request, res: Response) => {
-  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin } = req.body;
+  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin, street_number } = req.body;
 
   try {
     const userId = req?.userId;
@@ -57,6 +57,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     profile.lastname = lastname;
     profile.date_of_birth = date_of_birth;
     profile.marital_status = marital_status;
+    profile.street_number = street_number;
     profile.street_name = street_name;
     profile.city = city;
     profile.province = province;
