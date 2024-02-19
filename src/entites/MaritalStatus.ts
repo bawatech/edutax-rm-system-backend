@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryColumn } from "typeorm";
+import { Entity, Column, PrimaryColumn, OneToMany } from "typeorm";
+import { Profile } from "./Profile";
 
 @Entity({ name: "marital_status" })
 export class MaritalStatus {
@@ -9,4 +10,6 @@ export class MaritalStatus {
     @Column({ length: 255 })
     name: string;
 
+    @OneToMany(() => Profile, (profile) => profile.marital_status_detail)
+    profiles: Profile[]
 }

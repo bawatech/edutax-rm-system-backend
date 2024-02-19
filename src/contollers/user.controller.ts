@@ -80,9 +80,11 @@ export const getProfile = async (req: Request, res: Response) => {
 
   try {
     const userId = req?.userId;
+    console.log(userId)
     const profileRepo = AppDataSource.getRepository(Profile)
-    let profile = await profileRepo.findOne({where:{user:{id:userId}},relations: ['user','marital_status_detail','province_detail']});
-      sendSuccess(res,"Success",{profile})
+    let profile = await profileRepo.findOne({where:{user_id:userId},relations: ['user','marital_status_detail','province_detail']});
+    console.log('PORRR',profile)
+    sendSuccess(res,"Success",{profile})
 
 
   } catch (e) {
@@ -108,7 +110,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
       where: { user:{id:user?.id} }
     });
     if (!profile) {
-      return sendError(res, "Profile Not Found");
+      return sendError(res,"Please update profile first");
     }
 
     const taxfile = new Taxfile();
@@ -122,7 +124,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.province = profile.province;
     taxfile.postal_code = profile.postal_code;
     taxfile.mobile_number = profile.mobile_number;
-    taxfile.tax_year = tax_year;
+    taxfile.tax_year = '2022';
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
     taxfile.date_of_entry = date_of_entry;
@@ -441,19 +443,8 @@ export const taxFileDetails = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req?.params?.id)
     const userId = req?.userId;
-    // console.log("iiiiiiiiiiiiiiiiiiiiiiii",id)
-    // console.log("userIduserId",userId)
     const taxRepo = AppDataSource.getRepository(Taxfile);
-    // const taxfile = await taxRepo.findOne({ where: { id: id, created_by: userId } });
-
-    const taxfile = await taxRepo.query(
-      `SELECT t.*, p.name AS province_name, m.name AS marital_status_name
-       FROM taxfile t
-       LEFT JOIN provinces p ON t.province = p.code
-       LEFT JOIN marital_status m ON t.marital_status = m.code
-       WHERE t.id = ? AND t.added_by = ?`,
-      [id, userId]
-    );
+    const taxfile = await taxRepo.findOne({ where: { id: id, user_id: userId } });
 
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found' });
@@ -461,34 +452,27 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 
 
     const documentsRepo = AppDataSource.getRepository(Documents);
-    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, user_id_fk: userId } });
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, user_id_fk: userId },relations: ['type'] });
     if (!documents) {
       return res.status(400).json({ message: 'Documents not found' });
     }
 
     const base_url = process.env.BASE_URL;
 
-    const taxfileMod = { ...taxfile[0], document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile[0].document_direct_deposit_cra}` }
-    // const uploadDir = path.join(__dirname, '..', '..', 'storage', 'documents');
 
-    // const documentsWithPath = documents.map(doc => ({
-    //   ...doc,
-    //   full_path: path.join(uploadDir, doc.filename)
-    // }));
     const documentsWithPath = documents.map(doc => ({
       ...doc,
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    taxfileMod.documents = documentsWithPath;
-    console.log("taxfileModtaxfileMod", taxfileMod)
+    const taxfileMod = { ...taxfile,documents:documentsWithPath, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}` }
     res.status(200).json({ message: 'Success', taxfile: taxfileMod });
   } catch (e) {
     return handleCatch(res, e);
   }
 };
 
-export const taxFileList = async (req: Request, res: Response) => {
+export const userTaxFileList = async (req: Request, res: Response) => {
 
   try {
     const userId = req?.userId;
@@ -499,8 +483,7 @@ export const taxFileList = async (req: Request, res: Response) => {
     if (!taxfiles) {
       return sendError(res,"No record found")
     }
-
-    res.status(200).json({ message: 'Success', taxfiles });
+   return sendSuccess(res,'Success',{taxfiles})
   } catch (e) {
     return handleCatch(res, e);
   }

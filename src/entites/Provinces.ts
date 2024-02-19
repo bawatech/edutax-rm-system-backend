@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryColumn } from "typeorm";
+import { Entity, Column, PrimaryColumn, OneToMany } from "typeorm";
+import { Profile } from "./Profile";
 
 @Entity({ name: "provinces" })
 export class Provinces {
@@ -10,5 +11,8 @@ export class Provinces {
 
     @Column({ length: 255 })
     name: string;
+
+    @OneToMany(() => Profile, (profile) => profile.province)
+    profiles: Profile[]
 
 }

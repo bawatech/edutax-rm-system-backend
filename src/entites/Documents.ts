@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { DocumentTypes } from "./DocumentTypes";
 
 @Entity({ name: "documents" })
 export class Documents {
@@ -22,5 +23,10 @@ export class Documents {
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     added_on: Date;
+
+    @ManyToOne(() => DocumentTypes, (document) => document.documents)
+    @JoinColumn({ name: 'type_id_fk' })
+    type: DocumentTypes
+    
 
 }

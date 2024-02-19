@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, OneToOne, JoinColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, OneToOne, JoinColumn, ManyToOne } from "typeorm";
 import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "class-validator";
 // import { isValidPhoneNumber } from 'libphonenumber-js';
 import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
@@ -85,12 +85,11 @@ export class Profile {
     @IsMaritalStatus()
     marital_status: string;
 
-    @OneToOne(() => MaritalStatus)
+    @ManyToOne(() => MaritalStatus, (marital_status) => marital_status.profiles)
     @JoinColumn({ name: 'marital_status' })
     marital_status_detail: MaritalStatus
 
-    @OneToOne(() => Provinces)
+    @ManyToOne(() => Provinces, (province) => province.profiles)
     @JoinColumn({ name: 'province' })
     province_detail: Provinces
-
 }

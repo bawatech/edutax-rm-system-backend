@@ -166,7 +166,6 @@ export const updatePassword = async (req: Request, res: Response) => {
     const user = await userRepository.findOne({ where: { id: userId, password: oldPassword, id_status:"ACTIVE" } });
     if (user) {
       user.password = newPassword;
-      // await userRepository.save(user);
       await userRepository.update(user.id, user);
 
       return sendSuccess(res, "Password Updated Successfully", {}, 201);

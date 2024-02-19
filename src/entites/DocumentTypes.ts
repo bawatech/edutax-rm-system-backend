@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import { Documents } from "./Documents";
 
 @Entity({ name: "document_types" })
 export class DocumentTypes {
@@ -10,5 +11,8 @@ export class DocumentTypes {
 
     @Column()
     name: string;
+
+    @OneToMany(() => Documents, (document) => document.type)
+    documents: Documents[]
 
 }

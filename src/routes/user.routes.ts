@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { acceptSpouseInvitation, addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, sendSpouseInvitation, taxFileDetails, updateProfile, updateTaxfile } from "../contollers/user.controller";
+import { acceptSpouseInvitation, addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, sendSpouseInvitation, taxFileDetails, updateProfile, updateTaxfile, userTaxFileList } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -52,7 +52,7 @@ router.route("/").post((req, res) => {
 
 router.post("/add-taxfile", clientAuth, upload.any(), addTaxfile);
 router.post("/taxfile", clientAuth, upload.any(), addTaxfile);
-router.get("/taxfile", clientAuth, upload.any(), taxfilesList);
+router.get("/taxfile", clientAuth, upload.any(), userTaxFileList);
 router.get("/taxfile/:id",clientAuth, taxFileDetails);
 
 router.post("/update-taxfile", clientAuth, upload.any(), updateTaxfile);
@@ -66,11 +66,11 @@ router.route("/add-client-message").post(clientAuth, addClientMessage);
 router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
 
 router.put("/profile", clientAuth, updateProfile);
-
+router.get("/profile", clientAuth, getProfile);
 router.route("/send-invitation").post(clientAuth, sendSpouseInvitation);
 
 router.route("/accept-invitation/:token").get(acceptSpouseInvitation);
-router.get("/profile", clientAuth, getProfile);
+
 
 
 
