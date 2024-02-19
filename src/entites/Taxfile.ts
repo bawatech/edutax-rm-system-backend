@@ -1,7 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
 import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "class-validator";
 // import { isValidPhoneNumber } from 'libphonenumber-js';
 import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
+import { MaritalStatus } from "./MaritalStatus";
+import { Provinces } from "./Provinces";
+import { User } from "./User";
 
 @Entity()
 export class Taxfile {
@@ -84,9 +87,15 @@ export class Taxfile {
     @Column()
     user_id: number;
 
-    // @BeforeInsert()
-    // @BeforeUpdate()
-    // async validateBeforeSave() {
-    //     this.validate();
-    // }
+    @ManyToOne(() => MaritalStatus, (marital_status) => marital_status.taxfiles)
+    @JoinColumn({ name: 'marital_status' })
+    marital_status_detail: MaritalStatus
+
+    @ManyToOne(() => Provinces, (province) => province.taxfiles)
+    @JoinColumn({ name: 'province' })
+    province_detail: Provinces
+
+    @ManyToOne(() => User, (user) => user.taxfiles)
+    @JoinColumn({ name: 'user_id' })
+    user_detail: User
 }

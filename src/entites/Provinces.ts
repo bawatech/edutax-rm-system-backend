@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryColumn, OneToMany } from "typeorm";
 import { Profile } from "./Profile";
+import { Taxfile } from "./Taxfile";
 
 @Entity({ name: "provinces" })
 export class Provinces {
@@ -14,5 +15,8 @@ export class Provinces {
 
     @OneToMany(() => Profile, (profile) => profile.province)
     profiles: Profile[]
+
+    @OneToMany(() => Taxfile, (taxfile) => taxfile.marital_status_detail)
+    taxfiles: Taxfile[]
 
 }

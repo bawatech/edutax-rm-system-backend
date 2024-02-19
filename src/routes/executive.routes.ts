@@ -13,9 +13,9 @@ router.route("/taxfile/chat").post(executiveAuth, addExecutiveMessage);
 
 router.route("/taxfile/chat/:id").get(executiveAuth, getExecutiveMessages);
 
-router.route("/taxfiles-list").post(executiveAuth, taxfilesList);
+router.route("/taxfile").post(executiveAuth, taxfilesList);
 
-router.route("/taxfile-detail/:id").get(executiveAuth, taxfileDetail);
+router.route("/taxfile/:id").get(executiveAuth, taxfileDetail);
 
 router.route("/forgot-password").post(forgotPassword);
 

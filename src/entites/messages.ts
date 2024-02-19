@@ -2,6 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateCol
 import { IsEmail, Length } from "class-validator";
 import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 import { Executive } from "./Executive";
+import { User } from "./User";
 
 @Entity({ name: "messages" }) // Set the table name explicitly
 export class Messages {
@@ -20,24 +21,27 @@ export class Messages {
     @Column({ type: 'enum', enum: ['CLIENT', 'EXECUTIVE'] })
     user_type: string;
 
+    @Column({ nullable: true })
+    client_id_fk: number;
+
+    @Column({ nullable: true })
+    executive_id_fk: number;
+
+
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
     added_on: Date;
 
     @Column()
     added_by: number;
 
+    @ManyToOne(() => Executive, (executive) => executive.profiles)
+    @JoinColumn({ name: 'executive_id_fk' })
+    executive_detail: Executive
 
-    // // Define the association with the Executive entity
-    // @ManyToOne(type => Executive)
-    // @JoinColumn({ name: 'id' }) // Specify the foreign key column
-    // executive: Executive; // This property represents the association with the Executive entity
+    @ManyToOne(() => User, (user) => user.profiles)
+    @JoinColumn({ name: 'user_id_fk' })
+    user_detail: User
 
-    // @OneToOne(type => Executive, userTable => userTable.user_type)
-    // @JoinTable({
-    //     name: "Executive", // name of the intermediate table
-    //     joinColumn: { name: "user_type", referencedColumnName: "user_type" }, // join column of the source entity
-    //     inverseJoinColumn: { name: "added_by", referencedColumnName: "added_by" } // join column of the target entity
-    // })
-    // userTable: Executive;
+
 
 }

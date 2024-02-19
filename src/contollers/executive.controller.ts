@@ -128,6 +128,7 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
     msgTab.message = message;
     msgTab.category = category;
     msgTab.user_type = "EXECUTIVE";
+    msgTab.executive_id_fk = execId;
     msgTab.added_by = execId;
 
     await requestDataValidation(msgTab);
@@ -167,7 +168,11 @@ export const getExecutiveMessages = async (req: Request, res: Response) => {
 
     const messageRepository = AppDataSource.getRepository(Messages);
     const messages = await messageRepository.find({
-      where: { taxfile_id_fk: taxfile_id }
+      where: { taxfile_id_fk: taxfile_id }, relations: ['executive_detail'], select: {
+        executive_detail: {
+          name: true,
+        },
+      }
     });
 
     return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
@@ -197,28 +202,36 @@ export const taxfileDetail = async (req: Request, res: Response) => {
 
     const taxRepo = AppDataSource.getRepository(Taxfile);
 
-    const taxfile = await taxRepo.query(
-      `SELECT t.*, p.name AS province_name, m.name AS marital_status_name
-       FROM taxfile t
-       LEFT JOIN provinces p ON t.province = p.code
-       LEFT JOIN marital_status m ON t.marital_status = m.code
-       WHERE t.id = ?`,
-      [id]
-    );
+    // const taxfile = await taxRepo.query(
+    //   `SELECT t.*, p.name AS province_name, m.name AS marital_status_name
+    //    FROM taxfile t
+    //    LEFT JOIN provinces p ON t.province = p.code
+    //    LEFT JOIN marital_status m ON t.marital_status = m.code
+    //    WHERE t.id = ?`,
+    //   [id]
+    // );
+
+    const taxfile = await taxRepo.findOne({
+      where: { id: id }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+        user_detail: {
+          email: true,
+        },
+      }
+    });
 
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found' });
     }
 
     const documentsRepo = AppDataSource.getRepository(Documents);
-    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id } });
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id }, relations: ['type'] });
     if (!documents) {
       return res.status(400).json({ message: 'Documents not found' });
     }
 
     const base_url = process.env.BASE_URL;
 
-    const taxfileMod = { ...taxfile[0], document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile[0].document_direct_deposit_cra}` }
+    const taxfileMod: any = { ...taxfile, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}` }
 
     const documentsWithPath = documents.map(doc => ({
       ...doc,

@@ -38,17 +38,17 @@ export const createUser = async (req: Request, res: Response) => {
 
 
 export const updateProfile = async (req: Request, res: Response) => {
-  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin} = req.body;
+  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin } = req.body;
 
   try {
     const userId = req?.userId;
     //const dobDate = new Date(date_of_birth);
     const userRepo = AppDataSource.getRepository(User)
     const profileRepo = AppDataSource.getRepository(Profile)
-    const user = await userRepo.findOne({ where: { id: userId} });
-    let profile = await profileRepo.findOne({where:{user:{id:user?.id}}});
+    const user = await userRepo.findOne({ where: { id: userId } });
+    let profile = await profileRepo.findOne({ where: { user: { id: user?.id } } });
 
-    if(!profile){
+    if (!profile) {
       profile = new Profile();
       profile.added_by = userId;
     }
@@ -80,12 +80,9 @@ export const getProfile = async (req: Request, res: Response) => {
 
   try {
     const userId = req?.userId;
-    console.log(userId)
     const profileRepo = AppDataSource.getRepository(Profile)
-    let profile = await profileRepo.findOne({where:{user_id:userId},relations: ['user','marital_status_detail','province_detail']});
-    console.log('PORRR',profile)
-    sendSuccess(res,"Success",{profile})
-
+    let profile = await profileRepo.findOne({ where: { user_id: userId }, relations: ['user', 'marital_status_detail', 'province_detail'] });
+    sendSuccess(res, "Success", { profile })
 
   } catch (e) {
     return handleCatch(res, e);
@@ -104,13 +101,14 @@ export const addTaxfile = async (req: Request, res: Response) => {
   try {
     const userId = req?.userId;
     const userRepo = AppDataSource.getRepository(User)
-    const user = await userRepo.findOne({ where: { id: userId} });
+    const user = await userRepo.findOne({ where: { id: userId } });
     const profileRepo = AppDataSource.getRepository(Profile);
     const profile = await profileRepo.findOne({
-      where: { user:{id:user?.id} }
+      where: { user: { id: user?.id } }
     });
     if (!profile) {
-      return sendError(res,"Please update profile first");
+      unlinkMultiFiles(files);
+      return sendError(res, "Please update profile first");
     }
 
     const taxfile = new Taxfile();
@@ -118,7 +116,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.firstname = profile.firstname;
     taxfile.lastname = profile.lastname;
     taxfile.date_of_birth = profile.date_of_birth;
-    // taxfile.marital_status = profile.marital_status;
+    taxfile.marital_status = profile.marital_status;
     taxfile.street_name = profile.street_name;
     taxfile.city = profile.city;
     taxfile.province = profile.province;
@@ -136,40 +134,33 @@ export const addTaxfile = async (req: Request, res: Response) => {
     await requestDataValidation(taxfile)
 
     if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
-      return res.status(400).json({ message: 'Files are required' });
+      return sendError(res, "Files are Required");
     }
 
     const returnsRepository = AppDataSource.getRepository(Taxfile);
     const savedTaxfile = await returnsRepository.save(taxfile);
 
     if (!savedTaxfile) {
-      for (const file of files) {
-        let filepathfull = null;
-        if (file.filename) {
-          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
-          if (filepathfull != null) {
-            fs.unlinkSync(filepathfull);
-          }
-        }
-      }
-
-      let singleFileFullPath = null;
-      if (singleFile?.filename) {
-        singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
-        if (singleFileFullPath != null) {
-          fs.unlinkSync(singleFileFullPath);
-        }
-      }
-      return sendError(res, "Data Not Saved");
+      unlinkMultiFiles(files);
+      unlinkSingleFile(singleFile?.filename);
+      return sendError(res, "Taxfile Not Saved");
     }
     const taxfileId = savedTaxfile.id;
 
     //documents - start here
-
     const documentRepository = AppDataSource.getRepository(Documents);
     for (let i = 0; i < documents.length; i++) {
       const file = files[i];
       const typeId = documents[i]['typeid'];
+      const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
+      const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
+      if (!documentType) {
+        if (file.filename) {
+          unlinkMultiFiles(files);
+          unlinkSingleFile(singleFile?.filename);
+        }
+        return sendError(res, "Invalid Document Type");
+      }
       const document = new Documents();
       document.taxfile_id_fk = taxfileId;
       document.user_id_fk = userId;
@@ -178,47 +169,17 @@ export const addTaxfile = async (req: Request, res: Response) => {
       document.filename = file_name;
       const saveDocument = await documentRepository.save(document);
       if (!saveDocument) {
-        let filepathfull = null;
-        if (file.filename) {
-          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
-          if (filepathfull != null) {
-            fs.unlinkSync(filepathfull);
-          }
-        }
-
-        let singleFileFullPath = null;
-        if (singleFile?.filename) {
-          singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
-          if (singleFileFullPath != null) {
-            fs.unlinkSync(singleFileFullPath);
-          }
-        }
+        unlinkMultiFiles(files);
+        unlinkSingleFile(singleFile?.filename);
       }
 
     }
     //documents - end here
 
-    res.status(201).json({ message: 'Taxfile Created successfully', taxfile });
+    return sendSuccess(res, 'Success', { taxfile });
   } catch (e) {
-
-    for (const file of files) {
-      let filepathfull = null;
-      if (file.filename) {
-        filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
-        if (filepathfull != null) {
-          fs.unlinkSync(filepathfull);
-        }
-      }
-    }
-
-    let singleFileFullPath = null;
-    if (singleFile?.filename) {
-      singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
-      if (singleFileFullPath != null) {
-        fs.unlinkSync(singleFileFullPath);
-      }
-    }
-
+    unlinkMultiFiles(files);
+    unlinkSingleFile(singleFile?.filename);
     return handleCatch(res, e);
   }
 };
@@ -330,7 +291,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     const userId = req?.userId;
 
     const taxfileRepo = AppDataSource.getRepository(Taxfile);
-    const taxfile = await taxfileRepo.findOne({ where: { added_by: userId, id: taxfile_id } });
+    const taxfile = await taxfileRepo.findOne({ where: { user_id: userId, id: taxfile_id } });
     if (!taxfile) {
       return sendError(res, "Taxfile Not Found");
     }
@@ -346,30 +307,15 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     await requestDataValidation(taxfile)
 
     if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
-      return res.status(400).json({ message: 'Files are required' });
+      return sendError(res, "Files are Required");
     }
 
     const savedTaxfile = await taxfileRepo.update(taxfile.id, taxfile);
 
     if (!savedTaxfile) {
-      for (const file of files) {
-        let filepathfull = null;
-        if (file.filename) {
-          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
-          if (filepathfull != null) {
-            fs.unlinkSync(filepathfull);
-          }
-        }
-      }
-
-      let singleFileFullPath = null;
-      if (singleFile?.filename) {
-        singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
-        if (singleFileFullPath != null) {
-          fs.unlinkSync(singleFileFullPath);
-        }
-      }
-      return sendError(res, "Data Not Updated");
+      unlinkMultiFiles(files);
+      unlinkSingleFile(singleFile?.filename);
+      return sendError(res, "Taxfile Not Updated");
     }
 
     //documents - start here
@@ -394,46 +340,16 @@ export const updateTaxfile = async (req: Request, res: Response) => {
       document.filename = file_name;
       const saveDocument = await documentRepository.save(document);
       if (!saveDocument) {
-        let filepathfull = null;
-        if (file.filename) {
-          filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
-          if (filepathfull != null) {
-            fs.unlinkSync(filepathfull);
-          }
-        }
-
-        let singleFileFullPath = null;
-        if (singleFile?.filename) {
-          singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
-          if (singleFileFullPath != null) {
-            fs.unlinkSync(singleFileFullPath);
-          }
-        }
+        unlinkMultiFiles(files);
+        unlinkSingleFile(singleFile?.filename);
       }
     }
     //documents - end here
 
-    res.status(201).json({ message: 'Taxfile Updated successfully', taxfile });
+    return sendSuccess(res, 'Success', { taxfile });
   } catch (e) {
-
-    for (const file of files) {
-      let filepathfull = null;
-      if (file.filename) {
-        filepathfull = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
-        if (filepathfull != null) {
-          fs.unlinkSync(filepathfull);
-        }
-      }
-    }
-
-    let singleFileFullPath = null;
-    if (singleFile?.filename) {
-      singleFileFullPath = path.join(__dirname, '..', '..', 'storage', 'documents', singleFile.filename);
-      if (singleFileFullPath != null) {
-        fs.unlinkSync(singleFileFullPath);
-      }
-    }
-
+    unlinkMultiFiles(files);
+    unlinkSingleFile(singleFile?.filename);
     return handleCatch(res, e);
   }
 };
@@ -444,17 +360,24 @@ export const taxFileDetails = async (req: Request, res: Response) => {
     const id = parseInt(req?.params?.id)
     const userId = req?.userId;
     const taxRepo = AppDataSource.getRepository(Taxfile);
-    const taxfile = await taxRepo.findOne({ where: { id: id, user_id: userId } });
+    // const taxfile = await taxRepo.findOne({ where: { id: id, user_id: userId } });
+    const taxfile = await taxRepo.findOne({
+      where: { id: id, user_id: userId }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+        user_detail: {
+          email: true,
+        },
+      }
+    });
 
     if (!taxfile) {
-      return res.status(400).json({ message: 'Taxfile not found' });
+      return sendError(res, "Taxfile Not Found");
     }
 
 
     const documentsRepo = AppDataSource.getRepository(Documents);
-    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, user_id_fk: userId },relations: ['type'] });
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, user_id_fk: userId }, relations: ['type'] });
     if (!documents) {
-      return res.status(400).json({ message: 'Documents not found' });
+      return sendError(res, "Documents Not Found");
     }
 
     const base_url = process.env.BASE_URL;
@@ -465,8 +388,8 @@ export const taxFileDetails = async (req: Request, res: Response) => {
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    const taxfileMod = { ...taxfile,documents:documentsWithPath, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}` }
-    res.status(200).json({ message: 'Success', taxfile: taxfileMod });
+    const taxfileMod = { ...taxfile, documents: documentsWithPath, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}` }
+    return sendSuccess(res, 'Success', { taxfile: taxfileMod });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -478,12 +401,12 @@ export const userTaxFileList = async (req: Request, res: Response) => {
     const userId = req?.userId;
 
     const taxRepo = AppDataSource.getRepository(Taxfile);
-    const taxfiles = await taxRepo.find({where:{user_id:userId}});
+    const taxfiles = await taxRepo.find({ where: { user_id: userId } });
 
     if (!taxfiles) {
-      return sendError(res,"No record found")
+      return sendError(res, "No record found")
     }
-   return sendSuccess(res,'Success',{taxfiles})
+    return sendSuccess(res, 'Success', { taxfiles })
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -497,7 +420,7 @@ export const addClientMessage = async (req: Request, res: Response) => {
     const userId = req?.userId;
 
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
-    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, added_by: userId } });
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, user_id: userId } });
 
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found or not associated with the user' });
@@ -509,6 +432,7 @@ export const addClientMessage = async (req: Request, res: Response) => {
     msgTab.message = message;
     msgTab.category = "GENERAL";
     msgTab.user_type = "CLIENT";
+    msgTab.client_id_fk = userId;
     msgTab.added_by = userId;
 
     await requestDataValidation(msgTab);
@@ -522,25 +446,14 @@ export const addClientMessage = async (req: Request, res: Response) => {
 };
 
 export const getClientMessages = async (req: Request, res: Response) => {
-  // const { } = req.body;
   try {
 
     const taxfile_id = parseInt(req?.params?.id)
 
     const userId = req?.userId;
-    // if (!token) {
-    //   return res.status(400).json({ message: 'Token is required' });
-    // }
-
-    // const userLogRepository = AppDataSource.getRepository(UserLog);
-    // const userLog = await userLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
-    // if (!userLog) {
-    //   return res.status(400).json({ message: 'Invalid token or token expired' });
-    // }
-    // const userId = userLog.user_id_fk;
 
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
-    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, added_by: userId } });
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id, user_id: userId } });
 
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found or not associated with the user' });
@@ -548,16 +461,12 @@ export const getClientMessages = async (req: Request, res: Response) => {
 
     const messageRepository = AppDataSource.getRepository(Messages);
     const messages = await messageRepository.find({
-      where: { taxfile_id_fk: taxfile_id }
+      where: { taxfile_id_fk: taxfile_id }, relations: ['executive_detail'], select: {
+        executive_detail: {
+          name: true,
+        },
+      }
     });
-
-    // // Get repository for Messages
-    // const messageRepository = AppDataSource.getRepository(Messages);
-    // const messages = await messageRepository.createQueryBuilder('message')
-    //   .leftJoinAndSelect('message.executive', 'executive', 'message.user_type = :user_type AND message.added_by = executive.id', { user_type: 'EXECUTIVE' })
-    //   .addSelect('executive.email')
-    //   .where('message.taxfile_id_fk = :taxfileId', { taxfileId: taxfile_id })
-    //   .getMany();
 
     return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
 
@@ -566,12 +475,6 @@ export const getClientMessages = async (req: Request, res: Response) => {
   }
 };
 
-
-
-
-////////////////////////
-//ROUTES FOR MASTERS //START HERE
-////////////////////////
 
 export const getMaritalStatus = async (req: Request, res: Response) => {
   try {
@@ -712,6 +615,29 @@ export const acceptSpouseInvitation = async (req: Request, res: Response) => {
   }
 };
 
+export const getSpouse = async (req: Request, res: Response) => {
+  try {
+    const userId = req?.userId;
+
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { id:userId,id_status:"ACTIVE",is_deleted:false,verify_status:"VERIFIED",spouse_invite_status:"ACCEPTED" } });
+    if (!user) {
+      return sendError(res, "Spouse Not Found");
+    }
+
+    const spouse_id = user.spouse_id;
+    const spouse = await userRepository.findOne({ where: { id:spouse_id,id_status:"ACTIVE",is_deleted:false,verify_status:"VERIFIED",spouse_invite_status:"ACCEPTED",spouse_id:userId },select: ["email"] });
+    if (!spouse) {
+      return sendError(res, "Invalid Spouse");
+    }
+
+    return sendSuccess(res, "Success", { spouse }, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
 
 
 
@@ -721,4 +647,19 @@ export const acceptSpouseInvitation = async (req: Request, res: Response) => {
 
 const geenrateToken = () => {
   return uuidv4();
+}
+
+
+
+const unlinkMultiFiles = (files: Express.Multer.File[] = []) => {
+  for (const file of files as { filename: string }[]) {
+    fs.unlinkSync(path.join(__dirname, '..', '..', 'storage', 'documents', file.filename));
+  }
+}
+
+const unlinkSingleFile = (filename: any = null) => {
+  if (filename != null) {
+    fs.unlinkSync(path.join(__dirname, '..', '..', 'storage', 'documents', filename));
+  }
+
 }

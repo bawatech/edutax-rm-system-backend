@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { acceptSpouseInvitation, addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, sendSpouseInvitation, taxFileDetails, updateProfile, updateTaxfile, userTaxFileList } from "../contollers/user.controller";
+import { acceptSpouseInvitation, addClientMessage, addTaxfile, getClientMessages, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, getSpouse, sendSpouseInvitation, taxFileDetails, updateProfile, updateTaxfile, userTaxFileList } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -50,37 +50,34 @@ router.route("/").post((req, res) => {
   )
 });
 
-router.post("/add-taxfile", clientAuth, upload.any(), addTaxfile);
 router.post("/taxfile", clientAuth, upload.any(), addTaxfile);
-router.get("/taxfile", clientAuth, upload.any(), userTaxFileList);
-router.get("/taxfile/:id",clientAuth, taxFileDetails);
-
-router.post("/update-taxfile", clientAuth, upload.any(), updateTaxfile);
-
-
-
+router.get("/taxfile", clientAuth, userTaxFileList);
+router.get("/taxfile/:id", clientAuth, taxFileDetails);
+router.put("/taxfile", clientAuth, upload.any(), updateTaxfile);
 //router.route("/upload-documents").post(upload.any(), uploadDocuments);
 
-router.route("/add-client-message").post(clientAuth, addClientMessage);
 
-router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
+// router.route("/add-client-message").post(clientAuth, addClientMessage);
+// router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
+router.post("/message", clientAuth, addClientMessage);
+router.get("/message/:id", clientAuth, getClientMessages);
+
+
 
 router.put("/profile", clientAuth, updateProfile);
 router.get("/profile", clientAuth, getProfile);
-router.route("/send-invitation").post(clientAuth, sendSpouseInvitation);
-
-router.route("/accept-invitation/:token").get(acceptSpouseInvitation);
 
 
 
+router.post("/send-invitation", clientAuth, sendSpouseInvitation);
+router.get("/accept-invitation/:token", clientAuth, acceptSpouseInvitation);
+router.get("/spouse", clientAuth, getSpouse);
 
-////////////////////////
-//ROUTES FOR MASTERS //START HERE
-////////////////////////
-router.route("/get-marital-status").get(getMaritalStatus);
 
-router.route("/get-provinces").get(getProvinces);
 
-router.route("/get-document-types").get(getDocumentTypes);
+router.get("/marital-status", getMaritalStatus);
+router.get("/provinces", getProvinces);
+router.get("/document-types", getDocumentTypes);
+
 
 export default router

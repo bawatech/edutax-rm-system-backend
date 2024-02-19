@@ -1,7 +1,9 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
 import { IsEmail } from "class-validator";
 import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 import { IsStrongPassword } from "./dataValidations/strongPassword";
+import { Messages } from "./messages";
+import { Taxfile } from "./Taxfile";
 
 @Entity()
 export class User {
@@ -47,5 +49,11 @@ export class User {
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     deleted_on: Date | null;
+
+    @OneToMany(() => Messages, (message) => message.user_detail)
+    profiles: Messages[]
+
+    @OneToMany(() => Taxfile, (taxfile) => taxfile.user_detail)
+    taxfiles: Taxfile[]
 
 }

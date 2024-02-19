@@ -1,7 +1,8 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
 import { IsEmail } from "class-validator";
 import { IsStrongPassword } from "./dataValidations/strongPassword";
 import { IsUniqueExecutive } from "./dataValidations/IsUniqueExecutive";
+import { Messages } from "./messages";
 
 @Entity()
 export class Executive {
@@ -43,5 +44,8 @@ export class Executive {
 
     @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
     deleted_on: Date | null;
+
+    @OneToMany(() => Messages, (message) => message.executive_detail)
+    profiles: Messages[]
 
 }

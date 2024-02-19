@@ -11,7 +11,7 @@ INSERT INTO `document_types` (`id`, `code`, `name`) VALUES ('1', 'PAN', 'Pan Car
 INSERT INTO `provinces` (`id`, `code`, `name`) VALUES ('1', 'ON', 'Ontario'), ('2', 'QC', 'Quebec');
 
 --16th february 2024
-INSERT INTO `executive` (`id`, `email`, `password`, `user_type`, `id_status`, `is_deleted`, `otp`, `verify_status`, `added_on`, `added_by`, `deleted_on`) VALUES (NULL, 'admin@edutax.com', 'dddddd@10', 'ADMIN', 'ACTIVE', '0', '', 'VERIFIED', 'current_timestamp(6).000000', '', NULL);
+INSERT INTO `executive` (`id`, `email`, `password`, `user_type`, `id_status`, `is_deleted`, `otp`, `verify_status`, `added_on`, `added_by`, `deleted_on`) VALUES (NULL, 'admin@edutax.com', 'Test@123', 'ADMIN', 'ACTIVE', '0', '', 'VERIFIED', 'current_timestamp(6).000000', '', NULL);
 
 -- 17th february 2024
 --master for provinces
