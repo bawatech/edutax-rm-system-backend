@@ -15,7 +15,7 @@ export class Messages {
     @Column({ type: "text" })
     message: string;
 
-    @Column()
+    @Column({ default: 'GENERAL', nullable: true })
     category: string;
 
     @Column({ type: 'enum', enum: ['CLIENT', 'EXECUTIVE'] })
@@ -28,11 +28,23 @@ export class Messages {
     executive_id_fk: number;
 
 
-    @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+    @Column({ type: "timestamp", nullable: true })
     added_on: Date;
 
-    @Column()
+    @Column({ nullable: true })
     added_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    updated_on: Date;
+
+    @Column({ nullable: true })
+    updated_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    deleted_on: Date | null;
+
+    @Column({ nullable: true })
+    deleted_by: number;
 
     @ManyToOne(() => Executive, (executive) => executive.profiles)
     @JoinColumn({ name: 'executive_id_fk' })
@@ -41,7 +53,6 @@ export class Messages {
     @ManyToOne(() => User, (user) => user.profiles)
     @JoinColumn({ name: 'user_id_fk' })
     user_detail: User
-
 
 
 }

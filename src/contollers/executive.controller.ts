@@ -49,22 +49,9 @@ export const login = async (req: Request, res: Response) => {
 
 
 export const updateTaxfileStatus = async (req: Request, res: Response) => {
-  const { id, file_status, token } = req.body;
-
+  const { taxfile_id, file_status } = req.body;
+  const execId = req?.execId;
   try {
-
-    if (!token) {
-      return res.status(400).json({ message: 'Token is required' });
-    }
-
-    const executiveLogRepo = AppDataSource.getRepository(ExecutiveLog);
-    const executiveLog = await executiveLogRepo.findOne({ where: { key: token, is_deleted: false } });
-    if (!executiveLog) {
-      return res.status(400).json({ message: 'Invalid token or token expired' });
-    }
-
-    const executiveId = executiveLog.executive_id_fk;
-
     const statusRepository = AppDataSource.getRepository(TaxfileStatus);
     const taxfileStatus = await statusRepository.findOne({ where: { code: file_status } });
     if (!taxfileStatus) {
@@ -73,7 +60,7 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
 
 
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
-    const taxfile = await taxfileRepository.findOne({ where: { id: id } });
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id } });
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found' });
     }
@@ -83,7 +70,7 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
     const oldStatusUpdatedOn = taxfile.file_status_updated_on;
 
     const taxfileStatusLog = new TaxfileStatusLog();
-    taxfileStatusLog.taxfile_id_fk = id;
+    taxfileStatusLog.taxfile_id_fk = taxfile_id;
     taxfileStatusLog.last_file_status = oldStatus;
     taxfileStatusLog.last_file_status_updated_by = oldStatusUpdatedBy;
     taxfileStatusLog.last_file_status_updated_on = oldStatusUpdatedOn;
@@ -93,7 +80,7 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
 
 
     taxfile.file_status = file_status; //update with new status
-    taxfile.file_status_updated_by = executiveId;
+    taxfile.file_status_updated_by = execId;
 
     await requestDataValidation(taxfile)
 
@@ -106,6 +93,17 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
   }
 };
 
+export const getTaxfileStatus = async (req: Request, res: Response) => {
+  try {
+    const taxfileStatusRepo = AppDataSource.getRepository(TaxfileStatus);
+    const taxfileStatusList = await taxfileStatusRepo.find();
+
+    return sendSuccess(res, "Success", { taxfileStatusList }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
 export const addExecutiveMessage = async (req: Request, res: Response) => {
   const { message, taxfile_id, category } = req.body;
   try {
@@ -113,20 +111,24 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
     // if (!token) {
     //   return res.status(400).json({ message: 'Token is required' });
     // }
-
     // const executiveLogRepository = AppDataSource.getRepository(ExecutiveLog);
     // const executiveLog = await executiveLogRepository.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
     // if (!executiveLog) {
     //   return res.status(400).json({ message: 'Invalid token or token expired' });
     // }
-
     // const executiveId = executiveLog.executive_id_fk;
+
+    const templateRepo = AppDataSource.getRepository(Templates);
+    const template = await templateRepo.findOne({ where: { code: category, is_deleted: false, id_status: "ACTIVE" } });
+    const is_fixed = template?.is_fixed;
 
     const msgRepo = AppDataSource.getRepository(Messages);
     const msgTab = new Messages();
     msgTab.taxfile_id_fk = taxfile_id;
     msgTab.message = message;
-    msgTab.category = category;
+    if (is_fixed != true) {
+      msgTab.category = category;
+    }
     msgTab.user_type = "EXECUTIVE";
     msgTab.executive_id_fk = execId;
     msgTab.added_by = execId;

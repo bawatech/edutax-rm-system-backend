@@ -1,5 +1,6 @@
 import { DataSource } from "typeorm"
 import dotenv from 'dotenv'
+// import { UserSubscriber } from "./subscribers/UserSub"
 dotenv.config()
 export const AppDataSource = new DataSource({
     type: "mysql",

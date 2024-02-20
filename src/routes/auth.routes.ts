@@ -11,7 +11,7 @@ router.post("/logout", logout);
 router.post("/verify-email", clientAuth, verifyEmail);
 router.post("/forgot-password", forgotPassword);
 router.post("/new-password", newPassword);
-router.post("/update-password", clientAuth, updatePassword);
+router.put("/update-password", clientAuth, updatePassword);
 
 
 export default router

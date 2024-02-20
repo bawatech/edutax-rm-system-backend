@@ -61,21 +61,26 @@ export class Profile {
     })
     mobile_number: string;
 
-
-    @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    added_on: Date;
-
-    @Column()
-    added_by: number;
-
     @Column()
     user_id: number;
 
-    @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
-    updated_on: Date | null;
+    @Column({ type: "timestamp", nullable: true })
+    added_on: Date;
 
-    @Column()
+    @Column({ nullable: true })
+    added_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    updated_on: Date;
+
+    @Column({ nullable: true })
     updated_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    deleted_on: Date | null;
+
+    @Column({ nullable: true })
+    deleted_by: number;
 
     @OneToOne(() => User)
     @JoinColumn({ name: 'user_id' })
@@ -93,4 +98,6 @@ export class Profile {
     @ManyToOne(() => Provinces, (province) => province.profiles)
     @JoinColumn({ name: 'province' })
     province_detail: Provinces
+
+
 }

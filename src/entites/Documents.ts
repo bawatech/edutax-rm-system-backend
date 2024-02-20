@@ -22,8 +22,24 @@ export class Documents {
     @Column({ type: 'boolean', default: false })
     is_deleted: boolean;
 
-    @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+    @Column({ type: "timestamp", nullable: true })
     added_on: Date;
+
+    @Column({ nullable: true })
+    added_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    updated_on: Date;
+
+    @Column({ nullable: true })
+    updated_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    deleted_on: Date | null;
+
+    @Column({ nullable: true })
+    deleted_by: number;   
+
 
     @ManyToOne(() => DocumentTypes, (document) => document.documents)
     @JoinColumn({ name: 'type_id_fk' })

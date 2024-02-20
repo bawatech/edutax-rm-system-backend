@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../utils/responseHanlder';
 import { sendEmail } from '../utils/sendMail';
 import { Profile } from '../entites/Profile';
+import bcrypt from 'bcrypt';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -15,6 +16,9 @@ export const signUp = async (req: Request, res: Response) => {
     user.email = email;
     user.password = password;
     await requestDataValidation(user);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
 
     const userRepository = AppDataSource.getRepository(User);
     const existingUser: any = await userRepository.findOne({ where: { email: email, verify_status: "PENDING" } });
@@ -62,7 +66,11 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return sendError(res, "Invalid email");
     }
-    if (user.password !== password) {
+    // if (user.password !== password) {
+    //   return sendError(res, "Invalid password");
+    // }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       return sendError(res, "Invalid password");
     }
 
@@ -144,6 +152,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const newPassword = async (req: Request, res: Response) => {
   const { email, otp, newPassword } = req.body;
   try {
+    if (newPassword.length < 8 || newPassword.length > 20) {
+      return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
+    }
+    if (!/\d/.test(newPassword)) {
+      return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
+    }
+    if (!/[#@!$%&]/.test(newPassword)) {
+      return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
+    }
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: email, otp: otp, id_status: "ACTIVE" } });
     if (user) {
@@ -170,6 +187,16 @@ export const updatePassword = async (req: Request, res: Response) => {
   const { oldPassword, newPassword } = req.body;
 
   try {
+
+    if (newPassword.length < 8 || newPassword.length > 20) {
+      return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
+    }
+    if (!/\d/.test(newPassword)) {
+      return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
+    }
+    if (!/[#@!$%&]/.test(newPassword)) {
+      return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
+    }
 
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { id: userId, password: oldPassword, id_status: "ACTIVE" } });

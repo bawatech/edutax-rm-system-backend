@@ -6,7 +6,7 @@ export class DocumentTypes {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({nullable: true})
     code: string;
 
     @Column()

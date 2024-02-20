@@ -9,17 +9,17 @@ import {
 @ValidatorConstraint({ async: false })
 export class IsStrongPasswordConstraint implements ValidatorConstraintInterface {
     validate(password: any) {
-        // Password length should be between 8 and 20 characters
+        
         if (password.length < 8 || password.length > 20) {
             return false;
         }
 
-        // Password should contain at least one numeric value
+       
         if (!/\d/.test(password)) {
             return false;
         }
 
-        // Password should contain at least one symbol from #,@,!,$,%,&
+        
         if (!/[#@!$%&]/.test(password)) {
             return false;
         }

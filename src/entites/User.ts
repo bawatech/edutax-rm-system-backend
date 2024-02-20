@@ -1,9 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, EventSubscriber, LoadEvent, InsertEvent, UpdateEvent } from "typeorm";
 import { IsEmail } from "class-validator";
 import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 import { IsStrongPassword } from "./dataValidations/strongPassword";
 import { Messages } from "./messages";
 import { Taxfile } from "./Taxfile";
+import CryptoJS from 'crypto-js';
 
 @Entity()
 export class User {
@@ -44,16 +45,44 @@ export class User {
     @Column()
     spouse_id: number;
 
-    @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
-    created_on: Date;
+    @Column({ type: "timestamp", nullable: true })
+    added_on: Date;
 
-    @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
+    @Column({ nullable: true })
+    added_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    updated_on: Date;
+
+    @Column({ nullable: true })
+    updated_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
     deleted_on: Date | null;
+
+    @Column({ nullable: true })
+    deleted_by: number;
 
     @OneToMany(() => Messages, (message) => message.user_detail)
     profiles: Messages[]
 
     @OneToMany(() => Taxfile, (taxfile) => taxfile.user_detail)
     taxfiles: Taxfile[]
+
+
+
+    // private static secretKey = 'edu@EduTax';
+
+    // static getSecretKey(): string {
+    //   return User.secretKey;
+    // }
+  
+    // setEmail(email: string) {
+    //   this.email = CryptoJS.AES.encrypt(email, User.getSecretKey()).toString();
+    // }
+  
+    // getEmail(): string {
+    //   return CryptoJS.AES.decrypt(this.email, User.getSecretKey()).toString(CryptoJS.enc.Utf8);
+    // }
 
 }

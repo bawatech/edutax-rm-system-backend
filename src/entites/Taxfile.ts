@@ -71,17 +71,23 @@ export class Taxfile {
     // })
     tax_year: string;
 
-    @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
+    @Column({ type: "timestamp", nullable: true })
     added_on: Date;
 
-    @Column()
+    @Column({ nullable: true })
     added_by: number;
 
-    @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
-    updated_on: Date | null;
+    @Column({ type: "timestamp", nullable: true })
+    updated_on: Date;
 
-    @Column()
+    @Column({ nullable: true })
     updated_by: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    deleted_on: Date | null;
+
+    @Column({ nullable: true })
+    deleted_by: number;
 
 
     @Column()
@@ -98,4 +104,6 @@ export class Taxfile {
     @ManyToOne(() => User, (user) => user.taxfiles)
     @JoinColumn({ name: 'user_id' })
     user_detail: User
+
+
 }
