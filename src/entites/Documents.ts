@@ -7,16 +7,16 @@ export class Documents {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: true })
     taxfile_id_fk: number;
 
-    @Column()
+    @Column({ nullable: true })
     user_id_fk: number;
 
-    @Column()
+    @Column({ nullable: true })
     type_id_fk: number;
 
-    @Column()
+    @Column({ nullable: true })
     filename: string;
 
     @Column({ type: 'boolean', default: false })
@@ -38,13 +38,13 @@ export class Documents {
     deleted_on: Date | null;
 
     @Column({ nullable: true })
-    deleted_by: number;   
+    deleted_by: number;
 
 
     @ManyToOne(() => DocumentTypes, (document) => document.documents)
     @JoinColumn({ name: 'type_id_fk' })
     @IsDefined()
     type: DocumentTypes
-    
+
 
 }

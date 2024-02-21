@@ -11,58 +11,61 @@ export class Taxfile {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: true })
     profile_id_fk: number;
 
-    @Column()
+    @Column({ nullable: true })
     firstname: string;
 
-    @Column()
+    @Column({ nullable: true })
     lastname: string;
 
     @Column({ type: "date", nullable: true })
     date_of_birth: Date;
 
-    @Column()
+    @Column({ nullable: true })
     marital_status: string;
 
-    @Column()
+    @Column({ nullable: true })
+    street_number: string;
+
+    @Column({ nullable: true })
     street_name: string;
 
-    @Column()
+    @Column({ nullable: true })
     city: string;
 
-    @Column()
+    @Column({ nullable: true })
     province: string;
 
-    @Column()
+    @Column({ nullable: true })
     postal_code: string;
 
-    @Column()
+    @Column({ nullable: true })
     mobile_number: string;
 
-    @Column()
+    @Column({ nullable: true })
     taxfile_province: string;
 
-    @Column()
+    @Column({ nullable: true })
     moved_to_canada: string;
 
-    @Column()
+    @Column({ nullable: true })
     date_of_entry: string;
 
-    @Column()
+    @Column({ nullable: true })
     direct_deposit_cra: string;
 
-    @Column()
+    @Column({ nullable: true })
     document_direct_deposit_cra: string;
 
     @Column({ default: 'NEW_REQUEST' })
     file_status: string;
 
-    @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
-    file_status_updated_on: Date | null;
+    @Column({ type: "timestamp", nullable: true })
+    file_status_updated_on: Date;
 
-    @Column()
+    @Column({ nullable: true })
     file_status_updated_by: number;
 
     @Column()
@@ -90,7 +93,7 @@ export class Taxfile {
     deleted_by: number;
 
 
-    @Column()
+    @Column({ nullable: true })
     user_id: number;
 
     @ManyToOne(() => MaritalStatus, (marital_status) => marital_status.taxfiles)

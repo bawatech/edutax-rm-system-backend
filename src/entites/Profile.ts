@@ -23,7 +23,7 @@ export class Profile {
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     lastname: string;
 
-    @Column({ type: "date", nullable: true })
+    @Column({ type: "date" })
     @Matches(/^\d{4}-\d{2}-\d{2}$/, {
         message: 'The date must be in the correct format',
     })
@@ -33,7 +33,7 @@ export class Profile {
     @IsSin()
     sin: string;
 
-    @Column()
+    @Column({ nullable: true })
     street_number: string;
 
     @Column()
@@ -46,7 +46,7 @@ export class Profile {
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     city: string;
 
-    @Column({ length: 100 })
+    @Column()
     // @IsAlphanumeric()
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     province: string;
@@ -61,7 +61,7 @@ export class Profile {
     })
     mobile_number: string;
 
-    @Column()
+    @Column({ nullable: true })
     user_id: number;
 
     @Column({ type: "timestamp", nullable: true })

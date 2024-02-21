@@ -8,7 +8,7 @@ const router = Router();
 router.route("/login").post(login);
 router.route("/forgot-password").post(forgotPassword);
 router.route("/new-password").post(newPassword);
-router.route("/update-password").post(executiveAuth, updatePassword);
+router.route("/update-password").put(executiveAuth, updatePassword);
 
 
 

@@ -14,7 +14,7 @@ export class Templates {
     @Length(4, 50, { message: 'Title must be from 4 to 50 characters' })
     title: string;
 
-    @Column({ type: "text" })
+    @Column({ type: "text",nullable: true })
     @MaxLength(500, { message: 'Description must be at most 50 characters long' })
     description: string;
 

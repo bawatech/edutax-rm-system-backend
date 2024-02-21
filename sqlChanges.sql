@@ -3,7 +3,8 @@ INSERT INTO `taxfile_status` (`id`, `code`, `name`) VALUES ('1', 'NEW_REQUEST', 
 
 
 --16th february 2024
-INSERT INTO `executive` (`id`,`name`, `email`, `password`, `user_type`, `id_status`, `is_deleted`, `otp`, `verify_status`, `added_on`, `added_by`, `deleted_on`) VALUES (NULL,'admin', 'admin@edutax.com', 'Test@123', 'ADMIN', 'ACTIVE', '0', '', 'VERIFIED', NULL, NULL, NULL);
+--ADMIN account password is Test@123
+INSERT INTO `executive` (`id`,`name`, `email`, `password`, `user_type`, `id_status`, `is_deleted`, `otp`, `verify_status`, `added_on`, `added_by`, `deleted_on`) VALUES (NULL,'admin', 'admin@edutax.com', '$2b$10$hehmyqOXA7beoJpd8pzyWuQR5dxGxyCkYGFFbLiqk57ezXAgR7ekK', 'ADMIN', 'ACTIVE', '0', '', 'VERIFIED', NULL, NULL, NULL);
 
 -- 17th february 2024
 --master for provinces

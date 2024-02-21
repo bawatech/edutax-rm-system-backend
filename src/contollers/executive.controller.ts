@@ -13,12 +13,14 @@ import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../u
 import { Documents } from '../entites/Documents';
 import { sendEmail } from '../utils/sendMail';
 import { Templates } from '../entites/Templates';
-
+import bcrypt from 'bcrypt';
 
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
-
+  if (!email || email?.trim() === "" || email?.length <= 0 || !password || password?.trim() === "" || password?.length <= 0) {
+    return sendError(res, "Email and Password are required");
+  }
   try {
     const executiveRepository = AppDataSource.getRepository(Executive);
     const executive = await executiveRepository.findOne({ where: { email } });
@@ -26,10 +28,14 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid email' });
     }
 
-
-    if (executive.password !== password) {
-      return res.status(400).json({ message: 'Invalid password' });
+    const passwordMatch = await bcrypt.compare(password, executive.password);
+    if (!passwordMatch) {
+      return sendError(res, "Invalid password");
     }
+
+    // if (executive.password !== password) {
+    //   return res.status(400).json({ message: 'Invalid password' });
+    // }
 
     const token = geenrateToken();
 
@@ -50,6 +56,12 @@ export const login = async (req: Request, res: Response) => {
 
 export const updateTaxfileStatus = async (req: Request, res: Response) => {
   const { taxfile_id, file_status } = req.body;
+  if (!taxfile_id) {
+    return sendError(res, "Taxfile id is required")
+  }
+  if (!file_status) {
+    return sendError(res, "File Status is Required")
+  }
   const execId = req?.execId;
   try {
     const statusRepository = AppDataSource.getRepository(TaxfileStatus);
@@ -81,6 +93,7 @@ export const updateTaxfileStatus = async (req: Request, res: Response) => {
 
     taxfile.file_status = file_status; //update with new status
     taxfile.file_status_updated_by = execId;
+    taxfile.file_status_updated_on = new Date();
 
     await requestDataValidation(taxfile)
 
@@ -106,8 +119,20 @@ export const getTaxfileStatus = async (req: Request, res: Response) => {
 
 export const addExecutiveMessage = async (req: Request, res: Response) => {
   const { message, taxfile_id, category } = req.body;
+  if (!taxfile_id) {
+    return sendError(res, "Taxfile id is required")
+  }
+  // if (!category) {
+  //   return sendError(res, "Taxfile id is required")
+  // }
   try {
     const execId = req?.execId;
+    const taxfileRepository = AppDataSource.getRepository(Taxfile);
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id} });
+
+    if (!taxfile) {
+      return res.status(400).json({ message: 'Taxfile not found' });
+    }
     // if (!token) {
     //   return res.status(400).json({ message: 'Token is required' });
     // }
@@ -121,17 +146,21 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
     const templateRepo = AppDataSource.getRepository(Templates);
     const template = await templateRepo.findOne({ where: { code: category, is_deleted: false, id_status: "ACTIVE" } });
     const is_fixed = template?.is_fixed;
+    const is_fixed_category:any = template?.code;
 
     const msgRepo = AppDataSource.getRepository(Messages);
     const msgTab = new Messages();
     msgTab.taxfile_id_fk = taxfile_id;
     msgTab.message = message;
     if (is_fixed != true) {
-      msgTab.category = category;
+      msgTab.category = "GENERAL";
+    }else{
+      msgTab.category = is_fixed_category;
     }
     msgTab.user_type = "EXECUTIVE";
     msgTab.executive_id_fk = execId;
     msgTab.added_by = execId;
+    msgTab.added_on = new Date();
 
     await requestDataValidation(msgTab);
 
@@ -188,7 +217,13 @@ export const getExecutiveMessages = async (req: Request, res: Response) => {
 export const taxfilesList = async (req: Request, res: Response) => {
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
-    const taxfiles = await taxfilesRepo.find();
+    const taxfiles = await taxfilesRepo.find({
+       relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+        user_detail: {
+          email: true,
+        },
+      }
+    });
 
     return sendSuccess(res, "Taxfiles Fetched Successfully", { taxfiles }, 200);
   } catch (e) {
@@ -251,6 +286,9 @@ export const taxfileDetail = async (req: Request, res: Response) => {
 
 export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body;
+  if (!email || email?.trim() === "" || email?.length <= 0) {
+    return sendError(res, "Email is required");
+  }
   try {
     const execRepo = AppDataSource.getRepository(Executive);
     const exec = await execRepo.findOne({ where: { email: email, id_status: "ACTIVE" } });
@@ -274,11 +312,20 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 export const newPassword = async (req: Request, res: Response) => {
   const { email, otp, newPassword } = req.body;
+  if (!email || email?.trim() === "" || email?.length <= 0 || !newPassword || newPassword?.trim() === "" || newPassword?.length <= 0) {
+    return sendError(res, "Email and Password are required");
+  }
+
+  if (!otp) {
+    return sendError(res, "Otp is required");
+  }
   try {
     const execRepo = AppDataSource.getRepository(Executive);
     const exec = await execRepo.findOne({ where: { email: email, otp: otp, id_status: "ACTIVE" } });
     if (exec) {
-      exec.password = newPassword;
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      exec.password = hashedPassword;
+      //exec.password = newPassword;
       exec.otp = '';
       await execRepo.update(exec.id, exec);
 
@@ -300,11 +347,14 @@ export const updatePassword = async (req: Request, res: Response) => {
   const { oldPassword, newPassword } = req.body;
 
   try {
+    const hashedPassword_old = await bcrypt.hash(oldPassword, 10);
 
     const execRepo = AppDataSource.getRepository(Executive);
-    const exec = await execRepo.findOne({ where: { id: execId, password: oldPassword, id_status: "ACTIVE" } });
+    const exec = await execRepo.findOne({ where: { id: execId, id_status: "ACTIVE" } });
     if (exec) {
-      exec.password = newPassword;
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      exec.password = hashedPassword;
+      //exec.password = newPassword;
       await execRepo.update(exec.id, exec);
 
       return sendSuccess(res, "Password Updated Successfully", {}, 201);
@@ -328,14 +378,20 @@ export const updatePassword = async (req: Request, res: Response) => {
 ////////////////////////
 
 export const addExecutive = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-
+  const { name, email, password } = req.body;
+  const adminId = req?.execId;
   try {
     const executive = new Executive();
+    executive.name = name;
     executive.email = email;
     executive.password = password;
     executive.user_type = "EXECUTIVE";
+    executive.added_on = new Date();
+    executive.added_by = adminId;
     await requestDataValidation(executive);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    executive.password = hashedPassword;
 
     const executiveRepository = AppDataSource.getRepository(Executive);
     await executiveRepository.save(executive);
@@ -348,14 +404,25 @@ export const addExecutive = async (req: Request, res: Response) => {
 
 export const updateExecutiveStatus = async (req: Request, res: Response) => {
 
-  const { id_status, executiveId } = req.body;
-
+  const { id_status, executive_id } = req.body;
+  if (!id_status || id_status?.trim() === "" || id_status?.length <= 0) {
+    return sendError(res, "Id Status is required");
+  }
+  if (!executive_id) {
+    return sendError(res, "Executive Id is required");
+  }
+  const adminId = req?.execId;
   try {
+    if (id_status != "ACTIVE" && id_status != "INACTIVE") {
+      return sendError(res, "Wrong Status");
+    }
 
     const execRepo = AppDataSource.getRepository(Executive);
-    const exec = await execRepo.findOne({ where: { id: executiveId, id_status: "ACTIVE", is_deleted: true } });
+    const exec = await execRepo.findOne({ where: { id: executive_id, id_status: "ACTIVE", is_deleted: false } });
     if (exec) {
       exec.id_status = id_status;
+      exec.updated_on = new Date();
+      exec.updated_by = adminId;
       await execRepo.update(exec.id, exec);
 
       return sendSuccess(res, "Status Updated Successfully", {}, 201);
@@ -382,15 +449,27 @@ export const executivesList = async (req: Request, res: Response) => {
 
 export const addTemplate = async (req: Request, res: Response) => {
   const { code, title, description } = req.body;
+  if(!code){
+    return sendError(res, "Code is required");
+  }
 
+  const adminId = req?.execId;
   try {
+    const tempRepo = AppDataSource.getRepository(Templates);
+    const temp = await tempRepo.findOne({ where: { code: code, id_status: "ACTIVE", is_deleted: false } });
+    if (temp) {
+      return sendError(res, "Code Already Exists ");
+    }
+
     const templates = new Templates();
     templates.code = code;
     templates.title = title;
     templates.description = description;
+    templates.added_on = new Date();
+    templates.added_by = adminId;
     await requestDataValidation(templates);
 
-    const tempRepo = AppDataSource.getRepository(Templates);
+
     await tempRepo.save(templates);
 
     res.status(201).json({ message: 'Template Added successfully', templates });

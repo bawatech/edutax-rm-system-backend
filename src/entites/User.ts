@@ -11,7 +11,7 @@ export class User {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column()
+    @Column({type: "text"})
     // @Length(8, 20, { message: 'Password must be between 8 and 20 characters long' })
     @IsStrongPassword()
     password: string
@@ -21,10 +21,10 @@ export class User {
     @IsUniqueUser()
     email: string;
 
-    @Column()
+    @Column({ nullable: true })
     otp: string;
 
-    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED'] })
+    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED']})
     verify_status: string;
 
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })
@@ -33,16 +33,16 @@ export class User {
     @Column({ type: 'boolean', default: false })
     is_deleted: boolean;
 
-    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'ACCEPTED'] })
+    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'ACCEPTED']})
     spouse_invite_status: string;
 
-    @Column({ type: "text" })
+    @Column({ type: "text", nullable: true })
     spouse_invite_token: string;
 
-    @Column()
+    @Column({ nullable: true })
     spouse_email: string;
 
-    @Column()
+    @Column({ nullable: true })
     spouse_id: number;
 
     @Column({ type: "timestamp", nullable: true })
@@ -76,11 +76,11 @@ export class User {
     // static getSecretKey(): string {
     //   return User.secretKey;
     // }
-  
+
     // setEmail(email: string) {
     //   this.email = CryptoJS.AES.encrypt(email, User.getSecretKey()).toString();
     // }
-  
+
     // getEmail(): string {
     //   return CryptoJS.AES.decrypt(this.email, User.getSecretKey()).toString(CryptoJS.enc.Utf8);
     // }

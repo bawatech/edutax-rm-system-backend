@@ -51,6 +51,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     if (!profile) {
       profile = new Profile();
       profile.added_by = userId;
+      profile.added_on = new Date();
     }
 
     profile.firstname = firstname;
@@ -65,12 +66,14 @@ export const updateProfile = async (req: Request, res: Response) => {
     profile.sin = sin;
     profile.mobile_number = mobile_number?.replace(/\D/g, '')?.slice(-10);
     profile.user = user!;
+    profile.updated_on = new Date();
+    profile.updated_by = userId;
 
     await requestDataValidation(profile)
 
     await profileRepo.save(profile);
 
-    res.status(201).json({ message: 'Profile Created successfully', profile });
+    res.status(201).json({ message: 'Success', profile });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -109,6 +112,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     });
     if (!profile) {
       unlinkMultiFiles(files);
+      unlinkSingleFile(singleFile?.filename);
       return sendError(res, "Please update profile first");
     }
 
@@ -118,6 +122,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.lastname = profile.lastname;
     taxfile.date_of_birth = profile.date_of_birth;
     taxfile.marital_status = profile.marital_status;
+    taxfile.street_number = profile.street_number;
     taxfile.street_name = profile.street_name;
     taxfile.city = profile.city;
     taxfile.province = profile.province;
@@ -130,6 +135,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.direct_deposit_cra = direct_deposit_cra;
     taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
     taxfile.added_by = userId;
+    taxfile.added_on = new Date();
     taxfile.user_id = userId;
 
     await requestDataValidation(taxfile)
@@ -156,16 +162,16 @@ export const addTaxfile = async (req: Request, res: Response) => {
       const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
       const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
       if (!documentType) {
-        if (file.filename) {
-          unlinkMultiFiles(files);
-          unlinkSingleFile(singleFile?.filename);
-        }
+        unlinkMultiFiles(files);
+        unlinkSingleFile(singleFile?.filename);
         return sendError(res, "Invalid Document Type");
       }
       const document = new Documents();
       document.taxfile_id_fk = taxfileId;
       document.user_id_fk = userId;
       document.type_id_fk = typeId;
+      document.added_on = new Date();
+      document.added_by = userId;
       let file_name = file.filename;
       document.filename = file_name;
       const saveDocument = await documentRepository.save(document);
@@ -283,7 +289,10 @@ export const addTaxfile = async (req: Request, res: Response) => {
 export const updateTaxfile = async (req: Request, res: Response) => {
   const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra, taxfile_id } = req.body;
 
-  // Handle array of files
+  if(!taxfile_id){
+    return sendError(res, "Taxfile Id is Required");
+  }
+ 
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
   const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
@@ -303,7 +312,8 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     taxfile.date_of_entry = date_of_entry;
     taxfile.direct_deposit_cra = direct_deposit_cra;
     taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
-    taxfile.added_by = userId;
+    taxfile.updated_by = userId;
+    taxfile.updated_on = new Date();
 
     await requestDataValidation(taxfile)
 
@@ -333,10 +343,21 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     for (let i = 0; i < documents.length; i++) {
       const file = files[i];
       const typeId = documents[i]['typeid'];
+
+      const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
+      const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
+      if (!documentType) {
+        unlinkMultiFiles(files);
+        unlinkSingleFile(singleFile?.filename);
+        return sendError(res, "Invalid Document Type");
+      }
+
       const document = new Documents();
       document.taxfile_id_fk = taxfile_id;
       document.user_id_fk = userId;
       document.type_id_fk = typeId;
+      document.updated_by = userId;
+      document.updated_on = new Date();
       let file_name = file.filename;
       document.filename = file_name;
       const saveDocument = await documentRepository.save(document);
@@ -402,7 +423,11 @@ export const userTaxFileList = async (req: Request, res: Response) => {
     const userId = req?.userId;
 
     const taxRepo = AppDataSource.getRepository(Taxfile);
-    const taxfiles = await taxRepo.find({ where: { user_id: userId } });
+    const taxfiles = await taxRepo.find({ where: { user_id: userId },relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+      user_detail: {
+        email: true,
+      },
+    } });
 
     if (!taxfiles) {
       return sendError(res, "No record found")
@@ -435,6 +460,7 @@ export const addClientMessage = async (req: Request, res: Response) => {
     msgTab.user_type = "CLIENT";
     msgTab.client_id_fk = userId;
     msgTab.added_by = userId;
+    msgTab.added_on = new Date();
 
     await requestDataValidation(msgTab);
 
@@ -621,13 +647,13 @@ export const getSpouse = async (req: Request, res: Response) => {
     const userId = req?.userId;
 
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { id:userId,id_status:"ACTIVE",is_deleted:false,verify_status:"VERIFIED",spouse_invite_status:"ACCEPTED" } });
+    const user = await userRepository.findOne({ where: { id: userId, id_status: "ACTIVE", is_deleted: false, verify_status: "VERIFIED", spouse_invite_status: "ACCEPTED" } });
     if (!user) {
       return sendError(res, "Spouse Not Found");
     }
 
     const spouse_id = user.spouse_id;
-    const spouse = await userRepository.findOne({ where: { id:spouse_id,id_status:"ACTIVE",is_deleted:false,verify_status:"VERIFIED",spouse_invite_status:"ACCEPTED",spouse_id:userId },select: ["email"] });
+    const spouse = await userRepository.findOne({ where: { id: spouse_id, id_status: "ACTIVE", is_deleted: false, verify_status: "VERIFIED", spouse_invite_status: "ACCEPTED", spouse_id: userId }, select: ["email"] });
     if (!spouse) {
       return sendError(res, "Invalid Spouse");
     }

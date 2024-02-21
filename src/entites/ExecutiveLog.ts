@@ -6,16 +6,16 @@ export class ExecutiveLog {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: true })
     executive_id_fk: number;
 
-    @Column()
+    @Column({ nullable: true })
     key: string;
 
-    @Column()
+    @Column({ nullable: true })
     user_type: string;
 
-    @Column({ length: 10 })
+    @Column({ length: 10, nullable: true })
     privs: string;
 
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })

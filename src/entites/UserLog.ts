@@ -6,13 +6,13 @@ export class UserLog {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: true })
     user_id_fk: number;
 
-    @Column()
+    @Column({ nullable: true })
     key: string;
 
-    @Column({ length: 10 })
+    @Column({nullable: true })
     privs: string;
 
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })

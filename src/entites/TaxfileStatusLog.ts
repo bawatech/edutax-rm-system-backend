@@ -6,17 +6,17 @@ export class TaxfileStatusLog {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: true })
     taxfile_id_fk: number;
 
-    @Column()
+    @Column({ nullable: true })
     last_file_status: string;
 
 
-    @UpdateDateColumn({ type: "timestamp", nullable: true, default: () => null })
-    last_file_status_updated_on: Date | null;
+    @Column({ type: "timestamp", nullable: true })
+    last_file_status_updated_on: Date;
 
-    @Column()
+    @Column({ nullable: true })
     last_file_status_updated_by: number;
 
     @Column({ type: "timestamp", nullable: true })

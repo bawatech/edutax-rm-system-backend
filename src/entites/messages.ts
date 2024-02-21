@@ -4,7 +4,7 @@ import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 import { Executive } from "./Executive";
 import { User } from "./User";
 
-@Entity({ name: "messages" }) // Set the table name explicitly
+@Entity({ name: "messages" })
 export class Messages {
     @PrimaryGeneratedColumn()
     id: number
@@ -12,13 +12,13 @@ export class Messages {
     @Column()
     taxfile_id_fk: number;
 
-    @Column({ type: "text" })
+    @Column({ type: "text",nullable: true })
     message: string;
 
-    @Column({ default: 'GENERAL', nullable: true })
+    @Column({ default: 'GENERAL'})
     category: string;
 
-    @Column({ type: 'enum', enum: ['CLIENT', 'EXECUTIVE'] })
+    @Column({ type: 'enum', enum: ['CLIENT', 'EXECUTIVE'],nullable: true })
     user_type: string;
 
     @Column({ nullable: true })

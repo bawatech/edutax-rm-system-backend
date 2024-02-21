@@ -10,11 +10,14 @@ import bcrypt from 'bcrypt';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
-
+  if (!email || email?.trim() === "" || email?.length <= 0 || !password || password?.trim() === "" || password?.length <= 0) {
+    return sendError(res, "Email and Password are required");
+  }
   try {
     const user = new User();
     user.email = email;
     user.password = password;
+    user.added_on = new Date();
     await requestDataValidation(user);
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -59,8 +62,11 @@ export const signUp = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
-
+  if (!email || email?.trim() === "" || email?.length <= 0 || !password || password?.trim() === "" || password?.length <= 0) {
+    return sendError(res, "Email and Password are required");
+  }
   try {
+
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: email, id_status: "ACTIVE" } });
     if (!user) {
@@ -78,6 +84,7 @@ export const login = async (req: Request, res: Response) => {
     const userLog = new UserLog();
     userLog.user_id_fk = user.id;
     userLog.key = token;
+    userLog.added_on = new Date();
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
     const profileRepo = AppDataSource.getRepository(Profile)
@@ -127,6 +134,9 @@ export const logout = async (req: Request, res: Response) => {
 };
 export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body;
+  if (!email || email?.trim() === "" || email?.length <= 0) {
+    return sendError(res, "Email is required");
+  }
   try {
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: email, id_status: "ACTIVE" } });
@@ -151,8 +161,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
 export const newPassword = async (req: Request, res: Response) => {
   const { email, otp, newPassword } = req.body;
+  if (!email || email?.trim() === "" || email?.length <= 0 || !newPassword || newPassword?.trim() === "" || newPassword?.length <= 0) {
+    return sendError(res, "Email and Password are required");
+  }
+
+  if (!otp) {
+    return sendError(res, "Otp is required");
+  }
   try {
-    if (newPassword.length < 8 || newPassword.length > 20) {
+    if (newPassword?.length < 8 || newPassword?.length > 20) {
       return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
     }
     if (!/\d/.test(newPassword)) {
@@ -164,7 +181,9 @@ export const newPassword = async (req: Request, res: Response) => {
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: email, otp: otp, id_status: "ACTIVE" } });
     if (user) {
-      user.password = newPassword;
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashedPassword;
+      // user.password = newPassword;
       user.otp = '';
       // await userRepository.save(user);
       await userRepository.update(user.id, user);
@@ -199,9 +218,11 @@ export const updatePassword = async (req: Request, res: Response) => {
     }
 
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { id: userId, password: oldPassword, id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { id: userId, id_status: "ACTIVE" } });
     if (user) {
-      user.password = newPassword;
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashedPassword;
+      //user.password = newPassword;
       await userRepository.update(user.id, user);
 
       return sendSuccess(res, "Password Updated Successfully", {}, 201);

@@ -9,7 +9,7 @@ export class Executive {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column()
+    @Column({nullable: true})
     name: string
 
     @Column()
@@ -17,23 +17,23 @@ export class Executive {
     @IsUniqueExecutive()
     email: string;
 
-    @Column()
+    @Column({type: "text"})
     @IsStrongPassword()
     password: string
 
     @Column({ default: 'EXECUTIVE', type: 'enum', enum: ['ADMIN', 'EXECUTIVE'] })
     user_type: string;
 
-    @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })
+    @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE']})
     id_status: string;
 
     @Column({ type: 'boolean', default: false })
     is_deleted: boolean;
 
-    @Column()
+    @Column({nullable: true})
     otp: string;
 
-    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED'] })
+    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED']})
     verify_status: string;
 
     @Column({ type: "timestamp", nullable: true })
