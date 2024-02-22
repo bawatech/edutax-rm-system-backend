@@ -156,31 +156,38 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
     //documents - start here
     const documentRepository = AppDataSource.getRepository(Documents);
-    for (let i = 0; i < documents.length; i++) {
-      const file = files[i];
-      const typeId = documents[i]['typeid'];
-      const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
-      const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
-      if (!documentType) {
-        unlinkMultiFiles(files);
-        unlinkSingleFile(singleFile?.filename);
-        return sendError(res, "Invalid Document Type");
+    if (documents && Array.isArray(documents) && files && Array.isArray(files)) {
+      for (let i = 0; i < files.length; i++) {
+        if (documents[i]['typeid'] && documents[i]['typeid'] !== null && documents[i]['typeid'] !== undefined && documents[i]['typeid'] !== "") {
+          const file = files[i];
+          const typeId = documents[i]['typeid'];
+          const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
+          const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
+          if (!documentType) {
+            unlinkMultiFiles(files);
+            unlinkSingleFile(singleFile?.filename);
+            return sendError(res, "Invalid Document Type Id");
+          }
+          const document = new Documents();
+          document.taxfile_id_fk = taxfileId;
+          document.user_id_fk = userId;
+          document.type_id_fk = typeId;
+          document.added_on = new Date();
+          document.added_by = userId;
+          let file_name = file.filename;
+          document.filename = file_name;
+          const saveDocument = await documentRepository.save(document);
+          if (!saveDocument) {
+            unlinkMultiFiles(files);
+            unlinkSingleFile(singleFile?.filename);
+            return sendError(res, "Files Not Saved");
+          }
+        }
       }
-      const document = new Documents();
-      document.taxfile_id_fk = taxfileId;
-      document.user_id_fk = userId;
-      document.type_id_fk = typeId;
-      document.added_on = new Date();
-      document.added_by = userId;
-      let file_name = file.filename;
-      document.filename = file_name;
-      const saveDocument = await documentRepository.save(document);
-      if (!saveDocument) {
-        unlinkMultiFiles(files);
-        unlinkSingleFile(singleFile?.filename);
-      }
-
+    } else {
+      return sendError(res, "Wrong Format for documents");
     }
+
     //documents - end here
 
     return sendSuccess(res, 'Success', { taxfile });
@@ -317,11 +324,16 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     taxfile.updated_by = userId;
     taxfile.updated_on = new Date();
 
-    await requestDataValidation(taxfile)
+    await requestDataValidation(taxfile);
 
-    if (!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) {
-      return sendError(res, "Files are Required");
+    let is_old_documents_blank = false;
+    if (documents.some((doc: { id: number }) => !doc.id)) {
+      is_old_documents_blank = true;
     }
+
+    // if ((!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) && is_old_documents_blank == true) {
+    //   return sendError(res, "Files are Required");
+    // }
 
     const savedTaxfile = await taxfileRepo.update(taxfile.id, taxfile);
 
@@ -333,40 +345,60 @@ export const updateTaxfile = async (req: Request, res: Response) => {
 
     //documents - start here
     const documentRepository = AppDataSource.getRepository(Documents);
-    await documentRepository
-      .createQueryBuilder()
-      .update(Documents)
-      .set({ is_deleted: true })
-      .where('taxfile_id_fk = :taxfileId', { taxfileId: id })
-      .andWhere('user_id_fk = :userId', { userId: userId })
-      .execute();
-
-
-    for (let i = 0; i < documents.length; i++) {
-      const file = files[i];
-      const typeId = documents[i]['typeid'];
-
-      const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
-      const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
-      if (!documentType) {
-        unlinkMultiFiles(files);
-        unlinkSingleFile(singleFile?.filename);
-        return sendError(res, "Invalid Document Type");
+    const oldDocs = await documentRepository.find({ where: { taxfile_id_fk: id, user_id_fk: userId, is_deleted: false } });
+    if (oldDocs && Array.isArray(oldDocs)) {
+      for (const oldDoc of oldDocs) {
+        const existsInNewDocs = documents.some((doc: { id: any }) => doc.id == oldDoc.id);
+        if (!existsInNewDocs) {
+          oldDoc.is_deleted = true;
+          const oldDoc_name = oldDoc.filename;
+          const updateOldDoc = await documentRepository.update(oldDoc.id, oldDoc);
+          if (!updateOldDoc) {
+            unlinkMultiFiles(files);
+            unlinkSingleFile(singleFile?.filename);
+            return sendError(res, "Unable to delete Old file");
+          }
+          // let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', oldDoc_name);
+          // if (fs.existsSync(filepath)) {
+          //   fs.unlinkSync(filepath);
+          // }
+        }
       }
+    } else {
+      return sendError(res, "Unable to fetch old files");
+    }
 
-      const document = new Documents();
-      document.taxfile_id_fk = id;
-      document.user_id_fk = userId;
-      document.type_id_fk = typeId;
-      document.updated_by = userId;
-      document.updated_on = new Date();
-      let file_name = file.filename;
-      document.filename = file_name;
-      const saveDocument = await documentRepository.save(document);
-      if (!saveDocument) {
-        unlinkMultiFiles(files);
-        unlinkSingleFile(singleFile?.filename);
+    if (documents && Array.isArray(documents) && files && Array.isArray(files)) {
+      for (let i = 0; i < files.length; i++) {
+        if (documents[i]['typeid'] && documents[i]['typeid'] !== null && documents[i]['typeid'] !== undefined && documents[i]['typeid'] !== "") {
+          const file = files[i];
+          const typeId = documents[i]['typeid'];
+          const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
+          const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
+          if (!documentType) {
+            unlinkMultiFiles(files);
+            unlinkSingleFile(singleFile?.filename);
+            return sendError(res, "Invalid Document Type Id");
+          }
+
+          const document = new Documents();
+          document.taxfile_id_fk = id;
+          document.user_id_fk = userId;
+          document.type_id_fk = typeId;
+          document.added_by = userId;
+          document.added_on = new Date();
+          let file_name = file.filename;
+          document.filename = file_name;
+          const saveDocument = await documentRepository.save(document);
+          if (!saveDocument) {
+            unlinkMultiFiles(files);
+            unlinkSingleFile(singleFile?.filename);
+            return sendError(res, "Files Not Saved");
+          }
+        }
       }
+    } else {
+      return sendError(res, "Wrong Format for New Files");
     }
     //documents - end here
 
@@ -402,7 +434,7 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 
 
     const documentsRepo = AppDataSource.getRepository(Documents);
-    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, user_id_fk: userId }, relations: ['type'] });
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, user_id_fk: userId, is_deleted: false }, relations: ['type'] });
     if (!documents) {
       return sendError(res, "Documents Not Found");
     }
@@ -687,13 +719,18 @@ const geenrateToken = () => {
 
 const unlinkMultiFiles = (files: Express.Multer.File[] = []) => {
   for (const file of files as { filename: string }[]) {
-    fs.unlinkSync(path.join(__dirname, '..', '..', 'storage', 'documents', file.filename));
+    let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
   }
 }
 
 const unlinkSingleFile = (filename: any = null) => {
   if (filename != null) {
-    fs.unlinkSync(path.join(__dirname, '..', '..', 'storage', 'documents', filename));
+    let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', filename);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
   }
-
 }

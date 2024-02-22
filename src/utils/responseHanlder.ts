@@ -44,6 +44,7 @@ export class CustomError extends Error {
   }
 
   export const handleCatch =(res:any, e:any)=>{
+    //console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeeee",e)
     if (e instanceof CustomError) {
         return res.status(e.code).json(e.data);
       } else {

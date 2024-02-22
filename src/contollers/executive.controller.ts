@@ -264,7 +264,7 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     }
 
     const documentsRepo = AppDataSource.getRepository(Documents);
-    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id }, relations: ['type'] });
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id,is_deleted:false }, relations: ['type'] });
     if (!documents) {
       return res.status(400).json({ message: 'Documents not found' });
     }
