@@ -55,3 +55,6 @@ INSERT INTO `marital_status` (`name`, `code`) VALUES
 
 --master for document_types
 INSERT INTO `document_types` (`id`, `name`) VALUES ('1', 'T4'), ('2', 'T2202 Tution Slip'), ('3', 'T4A'), ('4', 'T4E');
+
+--21 st February , 2024
+INSERT INTO `templates` (`id`, `code`, `title`, `description`, `is_fixed`, `id_status`, `is_deleted`, `added_on`, `added_by`, `updated_on`, `updated_by`, `deleted_on`, `deleted_by`) VALUES ('1', 'TEMP_ONE', 'Template 1', 'Executive message for template one', '0', 'ACTIVE', '0', NULL, NULL, NULL, NULL, NULL, NULL), ('2', 'TEMP_TWO', 'Template 2', 'Executive message for template two', '0', 'ACTIVE', '0', NULL, NULL, NULL, NULL, NULL, NULL), ('3', 'TEMP_THREE', 'Template 3', 'Executive message for template three', '1', 'ACTIVE', '0', NULL, NULL, NULL, NULL, NULL, NULL);

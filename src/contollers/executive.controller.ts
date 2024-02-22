@@ -235,6 +235,9 @@ export const taxfilesList = async (req: Request, res: Response) => {
 export const taxfileDetail = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req?.params?.id)
+    if(!id){
+      return sendError(res, "Taxfile Id is Required");
+    }
     const execId = req?.execId;
 
     const taxRepo = AppDataSource.getRepository(Taxfile);

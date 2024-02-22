@@ -97,7 +97,7 @@ export const getProfile = async (req: Request, res: Response) => {
 export const addTaxfile = async (req: Request, res: Response) => {
   const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra } = req.body;
 
-  // Handle array of files
+
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
   const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
@@ -287,21 +287,23 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 
 export const updateTaxfile = async (req: Request, res: Response) => {
-  const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra, taxfile_id } = req.body;
+  const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra, id } = req.body;
 
-  if(!taxfile_id){
-    return sendError(res, "Taxfile Id is Required");
-  }
- 
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
   const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
+
+  if (!id) {
+    unlinkMultiFiles(files);
+    unlinkSingleFile(singleFile?.filename);
+    return sendError(res, "Taxfile Id is Required");
+  }
 
   try {
     const userId = req?.userId;
 
     const taxfileRepo = AppDataSource.getRepository(Taxfile);
-    const taxfile = await taxfileRepo.findOne({ where: { user_id: userId, id: taxfile_id } });
+    const taxfile = await taxfileRepo.findOne({ where: { user_id: userId, id: id } });
     if (!taxfile) {
       return sendError(res, "Taxfile Not Found");
     }
@@ -335,7 +337,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
       .createQueryBuilder()
       .update(Documents)
       .set({ is_deleted: true })
-      .where('taxfile_id_fk = :taxfileId', { taxfileId: taxfile_id })
+      .where('taxfile_id_fk = :taxfileId', { taxfileId: id })
       .andWhere('user_id_fk = :userId', { userId: userId })
       .execute();
 
@@ -353,7 +355,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
       }
 
       const document = new Documents();
-      document.taxfile_id_fk = taxfile_id;
+      document.taxfile_id_fk = id;
       document.user_id_fk = userId;
       document.type_id_fk = typeId;
       document.updated_by = userId;
@@ -380,6 +382,9 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 
   try {
     const id = parseInt(req?.params?.id)
+    if (!id) {
+      return sendError(res, "Taxfile Id is Required");
+    }
     const userId = req?.userId;
     const taxRepo = AppDataSource.getRepository(Taxfile);
     // const taxfile = await taxRepo.findOne({ where: { id: id, user_id: userId } });
@@ -423,11 +428,13 @@ export const userTaxFileList = async (req: Request, res: Response) => {
     const userId = req?.userId;
 
     const taxRepo = AppDataSource.getRepository(Taxfile);
-    const taxfiles = await taxRepo.find({ where: { user_id: userId },relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
-      user_detail: {
-        email: true,
-      },
-    } });
+    const taxfiles = await taxRepo.find({
+      where: { user_id: userId }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+        user_detail: {
+          email: true,
+        },
+      }
+    });
 
     if (!taxfiles) {
       return sendError(res, "No record found")
