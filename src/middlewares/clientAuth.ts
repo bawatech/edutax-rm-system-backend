@@ -5,7 +5,8 @@ import { UserLog } from "../entites/UserLog";
 declare global {
     namespace Express {
         interface Request {
-            userId?: any;
+            userId?: any,
+            userToken?: any,
         }
     }
 }
@@ -30,7 +31,7 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
     }
 
     try {
-        const userLog = await AppDataSource.getRepository(UserLog).findOne({ where: { key: token, is_deleted: false } });
+        const userLog = await AppDataSource.getRepository(UserLog).findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
 
         if (!userLog) {
             return res.status(401).json({ message: "Invalid token." });
@@ -39,6 +40,7 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
         const userId = userLog.user_id_fk;
 
         (req as any).userId = userId;
+        (req as any).userToken = token;
         next();
     } catch (error) {
         return res.status(403).json({ message: "Invalid token." });

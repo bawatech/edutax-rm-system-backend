@@ -33,7 +33,7 @@ export class User {
     @Column({ type: 'boolean', default: false })
     is_deleted: boolean;
 
-    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'ACCEPTED']})
+    @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'SENT', 'LINKED']})
     spouse_invite_status: string;
 
     @Column({ type: "text", nullable: true })

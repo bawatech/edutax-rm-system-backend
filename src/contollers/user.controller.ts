@@ -599,16 +599,20 @@ export const getDocumentTypes = async (req: Request, res: Response) => {
 export const sendSpouseInvitation = async (req: Request, res: Response) => {
   const { email } = req.body;
   const userId = req?.userId;
+  if (!email) {
+    return sendError(res, "Please Provide Email");
+  }
   try {
 
     const spouseRepo = AppDataSource.getRepository(User);
-    const existingSpouse = await spouseRepo.findOne({ where: { email: email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: Not(userId), spouse_invite_status: "PENDING" } });
+
+    const existingSpouse = await spouseRepo.findOne({ where: { email: email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: Not(userId), spouse_invite_status: Not("LINKED") } });
     if (!existingSpouse) {
       return sendError(res, "Spouse Not Found/Verification Pending/Already Linked");
     };
 
     const userRepo = AppDataSource.getRepository(User);
-    const existingUser = await userRepo.findOne({ where: { verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: userId, spouse_invite_status: "PENDING" } });
+    const existingUser = await userRepo.findOne({ where: { verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: userId, spouse_invite_status: Not("LINKED") } });
     if (!existingUser) {
       return sendError(res, "Verification Pending/Id Inactive/Already Linked to Spouse");
     };
@@ -646,10 +650,11 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
     existingUser.spouse_invite_token = token;
     existingUser.spouse_email = spouse_email;
     existingUser.spouse_id = spouse_id;
+    existingUser.spouse_invite_status = "SENT";
 
     await userRepo.update(existingUser.id, existingUser);
 
-    return sendSuccess(res, "Invitation Sent successfully.", {}, 201);
+    return sendSuccess(res, "Invitation Sent successfully.", { spouse_email: spouse_email, invitation_status: "SENT" }, 201);
 
   } catch (e) {
     return handleCatch(res, e);
@@ -662,7 +667,7 @@ export const acceptSpouseInvitation = async (req: Request, res: Response) => {
   try {
 
     const userRepo = AppDataSource.getRepository(User);
-    const existingUser = await userRepo.findOne({ where: { verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, spouse_invite_status: "PENDING", spouse_invite_token: token } });
+    const existingUser = await userRepo.findOne({ where: { verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, spouse_invite_status: Not("LINKED"), spouse_invite_token: token } });
     if (!existingUser) {
       return sendError(res, "Verification Pending/Id Inactive/Already Linked to Spouse");
     };
@@ -679,17 +684,17 @@ export const acceptSpouseInvitation = async (req: Request, res: Response) => {
     }
 
     const spouseRepo = AppDataSource.getRepository(User);
-    const existingSpouse = await spouseRepo.findOne({ where: { email: spouse_email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: spouse_id, spouse_invite_status: "PENDING" } });
+    const existingSpouse = await spouseRepo.findOne({ where: { email: spouse_email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: spouse_id, spouse_invite_status: Not("LINKED") } });
     if (!existingSpouse) {
       return sendError(res, "Spouse Not Found/Verification Pending/Already Linked");
     };
 
-    existingUser.spouse_invite_status = "ACCEPTED";
+    existingUser.spouse_invite_status = "LINKED";
     await userRepo.update(existingUser.id, existingUser);
 
     existingSpouse.spouse_email = user_email;
     existingSpouse.spouse_id = user_id;
-    existingSpouse.spouse_invite_status = "ACCEPTED";
+    existingSpouse.spouse_invite_status = "LINKED";
     await spouseRepo.update(existingSpouse.id, existingSpouse);
 
     return sendSuccess(res, "Spouse Linked successfully.", {}, 201);
@@ -704,18 +709,28 @@ export const getSpouse = async (req: Request, res: Response) => {
     const userId = req?.userId;
 
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { id: userId, id_status: "ACTIVE", is_deleted: false, verify_status: "VERIFIED", spouse_invite_status: "ACCEPTED" } });
-    if (!user) {
-      return sendError(res, "Spouse Not Found");
+    const invitationStatus = await userRepository.findOne({ where: { id: userId, id_status: "ACTIVE", is_deleted: false, verify_status: "VERIFIED" } });
+    if (!invitationStatus) {
+      return sendError(res, "Invalid User");
     }
 
-    const spouse_id = user.spouse_id;
-    const spouse = await userRepository.findOne({ where: { id: spouse_id, id_status: "ACTIVE", is_deleted: false, verify_status: "VERIFIED", spouse_invite_status: "ACCEPTED", spouse_id: userId }, select: ["email"] });
-    if (!spouse) {
-      return sendError(res, "Invalid Spouse");
-    }
+    const currentInvitationStatus = invitationStatus?.spouse_invite_status;
+    const spouse_id_ifAny = invitationStatus?.spouse_id;
+    const spouse_email_ifAny = invitationStatus?.spouse_email;
+    if (currentInvitationStatus == "SENT") {
+      return sendSuccess(res, "Invitation Already Sent", { spouse_email: spouse_email_ifAny, invitation_status: "SENT" }, 201);
+    } else if (currentInvitationStatus == "PENDING") {
+      return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "PENDING" }, 201);
+    } else if (currentInvitationStatus == "LINKED") {
 
-    return sendSuccess(res, "Success", { spouse }, 200);
+      const spouse = await userRepository.findOne({ where: { id: spouse_id_ifAny, id_status: "ACTIVE", is_deleted: false, verify_status: "VERIFIED", spouse_invite_status: "LINKED", spouse_id: userId }, select: ["email"] });
+      if (!spouse) {
+        const updateInvitationDetails = await userRepository.update(invitationStatus.id, { spouse_invite_status: "PENDING" });
+        return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "PENDING" }, 201);
+      }
+
+      return sendSuccess(res, "You have one Linked Spouse", { spouse_email: spouse_email_ifAny, invitation_status: "LINKED" }, 201);
+    }
 
   } catch (e) {
     return handleCatch(res, e);

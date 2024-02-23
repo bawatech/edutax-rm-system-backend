@@ -315,8 +315,8 @@ export const taxfileDetail = async (req: Request, res: Response) => {
 
     taxfileMod.documents = documentsWithPath;
 
-    taxfile.client_message_count = 0;
-    const updateCount = await taxRepo.update(taxfile.id, taxfile);
+    // taxfile.client_message_count = 0;
+    const updateCount = await taxRepo.update(taxfile.id, { client_message_count: 0 });
     if (!updateCount) {
       return sendError(res, "Unable to Reset Message Count");
     }

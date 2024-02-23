@@ -32,7 +32,7 @@ export const executiveAuth = async (req: Request, res: Response, next: NextFunct
     }
 
     try {
-        const executiveLog = await AppDataSource.getRepository(ExecutiveLog).findOne({ where: { key: token, is_deleted: false } });
+        const executiveLog = await AppDataSource.getRepository(ExecutiveLog).findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
 
         if (!executiveLog) {
             return res.status(401).json({ message: "Invalid token1." });
