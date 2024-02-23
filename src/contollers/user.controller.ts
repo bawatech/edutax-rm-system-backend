@@ -640,7 +640,7 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
 
     const token = geenrateToken();
     const base_url = process.env.BASE_URL;
-    const invitationLink = `${base_url}/user/accept-invitation/${token}`;
+    const invitationLink = `<a href="${base_url}/user/accept-invitation/${token}" target="_blank" style="font-size: 16px; font-weight: bold; background-color: #6699FF; text-decoration: none; display: inline-block; padding: 12px 24px; border-radius: 25px;">Click Here To Accept Invitation</a>`;
 
     const subject = "Edutax: Spousal Invitation";
     // const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -704,6 +704,35 @@ export const acceptSpouseInvitation = async (req: Request, res: Response) => {
   }
 };
 
+export const unlinkSpouse = async (req: Request, res: Response) => {
+  const userId = req?.userId;
+  try {
+    const userRepo = AppDataSource.getRepository(User);
+    const existingUser = await userRepo.findOne({ where: { verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: userId, spouse_invite_status: "LINKED" } });
+    if (!existingUser) {
+      return sendError(res, "Verification Pending/Id Inactive/Already UnLinked");
+    };
+
+    const spouse_id = existingUser.spouse_id;
+    const spouse_email = existingUser.spouse_email;
+
+    const spouseRepo = AppDataSource.getRepository(User);
+    const existingSpouse = await spouseRepo.findOne({ where: { email: spouse_email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: spouse_id, spouse_invite_status: "LINKED" } });
+    if (!existingSpouse) {
+      return sendError(res, "Spouse Not Found/Verification Pending/Already UnLinked");
+    };
+
+    await userRepo.update(existingUser.id, { spouse_invite_token: "", spouse_invite_status: "UNLINKED", spouse_email: "" });
+
+    await spouseRepo.update(existingSpouse.id, { spouse_invite_token: "", spouse_invite_status: "UNLINKED", spouse_email: "" });
+
+    return sendSuccess(res, "Unlinked successfully.", {}, 201);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
 export const getSpouse = async (req: Request, res: Response) => {
   try {
     const userId = req?.userId;
@@ -719,14 +748,14 @@ export const getSpouse = async (req: Request, res: Response) => {
     const spouse_email_ifAny = invitationStatus?.spouse_email;
     if (currentInvitationStatus == "SENT") {
       return sendSuccess(res, "Invitation Already Sent", { spouse_email: spouse_email_ifAny, invitation_status: "SENT" }, 201);
-    } else if (currentInvitationStatus == "PENDING") {
-      return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "PENDING" }, 201);
+    } else if (currentInvitationStatus == "UNLINKED") {
+      return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "UNLINKED" }, 201);
     } else if (currentInvitationStatus == "LINKED") {
 
       const spouse = await userRepository.findOne({ where: { id: spouse_id_ifAny, id_status: "ACTIVE", is_deleted: false, verify_status: "VERIFIED", spouse_invite_status: "LINKED", spouse_id: userId }, select: ["email"] });
       if (!spouse) {
-        const updateInvitationDetails = await userRepository.update(invitationStatus.id, { spouse_invite_status: "PENDING" });
-        return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "PENDING" }, 201);
+        const updateInvitationDetails = await userRepository.update(invitationStatus.id, { spouse_invite_status: "UNLINKED" });
+        return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "UNLINKED" }, 201);
       }
 
       return sendSuccess(res, "You have one Linked Spouse", { spouse_email: spouse_email_ifAny, invitation_status: "LINKED" }, 201);
