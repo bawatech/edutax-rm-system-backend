@@ -124,14 +124,23 @@ export const verifyEmail = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-
+  const userId = req?.userId;
+  const execToken = req?.execToken;
   try {
+    const userLogRepo = AppDataSource.getRepository(UserLog);
+    const logoutStatus: any = await userLogRepo.findOne({ where: { key: execToken, user_id_fk: userId } });
+    logoutStatus.id_status = "INACTIVE";
+    logoutStatus.is_deleted = true;
+    await userLogRepo.update(logoutStatus.id, logoutStatus);
+
     return sendSuccess(res, "Logged out Successfully", {}, 200);
 
   } catch (e) {
     return handleCatch(res, e);
   }
 };
+
+
 export const forgotPassword = async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email || email?.trim() === "" || email?.length <= 0) {

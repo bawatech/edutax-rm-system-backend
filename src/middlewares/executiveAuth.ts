@@ -7,6 +7,7 @@ declare global {
         interface Request {
             execId?: any,
             userType?: any,
+            execToken?: any,
         }
     }
 }
@@ -41,6 +42,7 @@ export const executiveAuth = async (req: Request, res: Response, next: NextFunct
 
         (req as any).execId = execId;
         (req as any).userType = executiveLog?.user_type;
+        (req as any).execToken = token;
         next();
     } catch (error) {
         return res.status(403).json({ message: "Invalid token2." });

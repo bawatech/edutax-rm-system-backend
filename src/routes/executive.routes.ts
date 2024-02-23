@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount } from "../contollers/executive.controller";
+import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount, logout } from "../contollers/executive.controller";
 import { executiveAuth } from "../middlewares/executiveAuth";
 import { isAdmin } from "../middlewares/isAdmin";
 
 const router = Router();
 
 router.route("/login").post(login);
+router.post("/logout", logout);
 router.route("/forgot-password").post(forgotPassword);
 router.route("/new-password").post(newPassword);
 router.route("/update-password").put(executiveAuth, updatePassword);

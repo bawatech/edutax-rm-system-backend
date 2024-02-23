@@ -54,6 +54,23 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+export const logout = async (req: Request, res: Response) => {
+  const execId = req?.execId;
+  const execToken = req?.execToken;
+  try {
+    const execLogRepo = AppDataSource.getRepository(ExecutiveLog);
+    const logoutStatus: any = await execLogRepo.findOne({ where: { key: execToken, executive_id_fk: execId } });
+    logoutStatus.id_status = "INACTIVE";
+    logoutStatus.is_deleted = true;
+    await execLogRepo.update(logoutStatus.id, logoutStatus);
+
+    return sendSuccess(res, "Logged out Successfully", {}, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
 
 export const updateTaxfileStatus = async (req: Request, res: Response) => {
   const { taxfile_id, file_status } = req.body;
@@ -129,7 +146,7 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
   try {
     const execId = req?.execId;
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
-    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id} });
+    const taxfile = await taxfileRepository.findOne({ where: { id: taxfile_id } });
 
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found' });
@@ -147,7 +164,7 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
     const templateRepo = AppDataSource.getRepository(Templates);
     const template = await templateRepo.findOne({ where: { code: category, is_deleted: false, id_status: "ACTIVE" } });
     const is_fixed = template?.is_fixed;
-    const is_fixed_category:any = template?.code;
+    const is_fixed_category: any = template?.code;
 
     const msgRepo = AppDataSource.getRepository(Messages);
     const msgTab = new Messages();
@@ -155,7 +172,7 @@ export const addExecutiveMessage = async (req: Request, res: Response) => {
     msgTab.message = message;
     if (is_fixed != true) {
       msgTab.category = "GENERAL";
-    }else{
+    } else {
       msgTab.category = is_fixed_category;
     }
     msgTab.user_type = "EXECUTIVE";
@@ -219,7 +236,7 @@ export const taxfilesList = async (req: Request, res: Response) => {
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
     const taxfiles = await taxfilesRepo.find({
-       relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+      relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
         user_detail: {
           email: true,
         },
@@ -235,11 +252,13 @@ export const taxfilesList = async (req: Request, res: Response) => {
 export const taxfilesListWithCount = async (req: Request, res: Response) => {
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
-    const taxfiles = await taxfilesRepo.find({ where: { client_message_count: MoreThan(0) }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
-      user_detail: {
-        email: true,
-      },
-    } });
+    const taxfiles = await taxfilesRepo.find({
+      where: { client_message_count: MoreThan(0) }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+        user_detail: {
+          email: true,
+        },
+      }
+    });
 
     return sendSuccess(res, "Success", { taxfiles }, 200);
   } catch (e) {
@@ -251,7 +270,7 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
 export const taxfileDetail = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req?.params?.id)
-    if(!id){
+    if (!id) {
       return sendError(res, "Taxfile Id is Required");
     }
     const execId = req?.execId;
@@ -280,7 +299,7 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     }
 
     const documentsRepo = AppDataSource.getRepository(Documents);
-    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id,is_deleted:false }, relations: ['type'] });
+    const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, is_deleted: false }, relations: ['type'] });
     if (!documents) {
       return res.status(400).json({ message: 'Documents not found' });
     }
@@ -474,7 +493,7 @@ export const executivesList = async (req: Request, res: Response) => {
 
 export const addTemplate = async (req: Request, res: Response) => {
   const { code, title, description } = req.body;
-  if(!code){
+  if (!code) {
     return sendError(res, "Code is required");
   }
 
