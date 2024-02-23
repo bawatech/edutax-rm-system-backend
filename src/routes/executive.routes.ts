@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus } from "../contollers/executive.controller";
+import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount } from "../contollers/executive.controller";
 import { executiveAuth } from "../middlewares/executiveAuth";
 import { isAdmin } from "../middlewares/isAdmin";
 
@@ -22,6 +22,7 @@ router.route("/taxfile/chat/:id").get(executiveAuth, getExecutiveMessages);
 
 router.route("/taxfile").get(executiveAuth, taxfilesList);
 router.route("/taxfile/:id").get(executiveAuth, taxfileDetail);
+router.route("/taxfile/message-count").get(executiveAuth, taxfilesListWithCount);
 
 
 
