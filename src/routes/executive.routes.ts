@@ -22,7 +22,7 @@ router.route("/taxfile/chat/:id").get(executiveAuth, getExecutiveMessages);
 
 router.route("/taxfile").get(executiveAuth, taxfilesList);
 router.route("/taxfile/:id").get(executiveAuth, taxfileDetail);
-router.route("/taxfile/message-count").get(executiveAuth, taxfilesListWithCount);
+router.route("/taxfile-message-count").get(executiveAuth, taxfilesListWithCount);
 
 
 
