@@ -726,7 +726,7 @@ export const unlinkSpouse = async (req: Request, res: Response) => {
 
     await spouseRepo.update(existingSpouse.id, { spouse_invite_token: "", spouse_invite_status: "UNLINKED", spouse_email: "" });
 
-    return sendSuccess(res, "Unlinked successfully.", {}, 201);
+    return sendSuccess(res, "Unlinked successfully.", {invitation_status: "UNLINKED",spouse_email: ""}, 201);
 
   } catch (e) {
     return handleCatch(res, e);
