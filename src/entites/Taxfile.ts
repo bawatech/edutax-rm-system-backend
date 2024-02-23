@@ -78,6 +78,9 @@ export class Taxfile {
     client_message_count: number;
 
     @Column({ type: "timestamp", nullable: true })
+    client_last_msg_time: Date;
+
+    @Column({ type: "timestamp", nullable: true })
     added_on: Date;
 
     @Column({ nullable: true })

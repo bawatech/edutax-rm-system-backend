@@ -500,7 +500,8 @@ export const addClientMessage = async (req: Request, res: Response) => {
     msgTab.user_type = "CLIENT";
     msgTab.client_id_fk = userId;
     msgTab.added_by = userId;
-    msgTab.added_on = new Date();
+    let msgTime = new Date();
+    msgTab.added_on = msgTime;
 
     await requestDataValidation(msgTab);
     const saveMsg = await msgRepo.save(msgTab);
@@ -515,6 +516,7 @@ export const addClientMessage = async (req: Request, res: Response) => {
       clientMsgCount = 1;
     }
     taxfile.client_message_count = clientMsgCount;
+    taxfile.client_last_msg_time = msgTime;
     const updateCount = await taxfileRepository.update(taxfile.id, taxfile);
     if (!updateCount) {
       return sendError(res, "Unable to update Message Count");
