@@ -14,6 +14,7 @@ import { Documents } from '../entites/Documents';
 import { sendEmail } from '../utils/sendMail';
 import { Templates } from '../entites/Templates';
 import bcrypt from 'bcrypt';
+import { MoreThan } from 'typeorm';
 
 
 export const login = async (req: Request, res: Response) => {
@@ -231,6 +232,21 @@ export const taxfilesList = async (req: Request, res: Response) => {
   }
 };
 
+export const taxfilesListWithCount = async (req: Request, res: Response) => {
+  try {
+    const taxfilesRepo = AppDataSource.getRepository(Taxfile);
+    const taxfiles = await taxfilesRepo.find({ where: { client_message_count: MoreThan(0) }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+      user_detail: {
+        email: true,
+      },
+    } });
+
+    return sendSuccess(res, "Success", { taxfiles }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
 
 export const taxfileDetail = async (req: Request, res: Response) => {
   try {
@@ -279,6 +295,12 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     }));
 
     taxfileMod.documents = documentsWithPath;
+
+    taxfile.client_message_count = 0;
+    const updateCount = await taxRepo.update(taxfile.id, taxfile);
+    if (!updateCount) {
+      return sendError(res, "Unable to Reset Message Count");
+    }
 
     res.status(200).json({ message: 'Success', taxfile: taxfileMod });
 

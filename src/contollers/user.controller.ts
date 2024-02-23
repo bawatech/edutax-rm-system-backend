@@ -479,9 +479,10 @@ export const userTaxFileList = async (req: Request, res: Response) => {
 
 export const addClientMessage = async (req: Request, res: Response) => {
   const { message, taxfile_id } = req.body;
+  if (!taxfile_id) {
+    return sendError(res, "Please Provide Taxfile Id");
+  }
   try {
-
-
     const userId = req?.userId;
 
     const taxfileRepository = AppDataSource.getRepository(Taxfile);
@@ -502,8 +503,23 @@ export const addClientMessage = async (req: Request, res: Response) => {
     msgTab.added_on = new Date();
 
     await requestDataValidation(msgTab);
+    const saveMsg = await msgRepo.save(msgTab);
+    if (!saveMsg) {
+      return sendError(res, "Unable to Save Message");
+    }
 
-    await msgRepo.save(msgTab);
+    let clientMsgCount = parseInt(String(taxfile.client_message_count)) || 0;
+    if (clientMsgCount >= 0) {
+      clientMsgCount = clientMsgCount + 1;
+    } else {
+      clientMsgCount = 1;
+    }
+    taxfile.client_message_count = clientMsgCount;
+    const updateCount = await taxfileRepository.update(taxfile.id, taxfile);
+    if (!updateCount) {
+      return sendError(res, "Unable to update Message Count");
+    }
+
     return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
 
   } catch (e) {

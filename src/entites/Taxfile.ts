@@ -74,6 +74,9 @@ export class Taxfile {
     // })
     tax_year: string;
 
+    @Column({ default: 0, nullable: true })
+    client_message_count: number;
+
     @Column({ type: "timestamp", nullable: true })
     added_on: Date;
 
