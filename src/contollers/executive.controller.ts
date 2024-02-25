@@ -237,7 +237,7 @@ export const taxfilesList = async (req: Request, res: Response) => {
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
     const taxfiles = await taxfilesRepo.find({
-      relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+      relations: ['user_detail'], select: {
         user_detail: {
           email: true,
         },
@@ -254,7 +254,7 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
     const taxfiles = await taxfilesRepo.find({
-      where: { client_message_count: MoreThan(0) }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+      where: { client_message_count: MoreThan(0) }, relations: ['user_detail'], select: {
         user_detail: {
           email: true,
         },
