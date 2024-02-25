@@ -15,6 +15,7 @@ import { Provinces } from '../entites/Provinces';
 import { DocumentTypes } from '../entites/DocumentTypes';
 import { sendEmail } from '../utils/sendMail';
 import { v4 as uuidv4 } from 'uuid';
+import { sendSpouseInvitationMail } from '../services/EmailManager';
 
 
 
@@ -620,32 +621,8 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
     const spouse_id = existingSpouse.id;
     const spouse_email = existingSpouse.email;
 
-    // const spouseProfileRepo = AppDataSource.getRepository(Profile);
-    // const spouseProfile = await spouseProfileRepo.findOne({
-    //   where: { added_by: spouse_id },
-    //   order: { added_on: 'DESC' } as FindOneOptions['order']
-    // });
-    // if (!spouseProfile) {
-    //   return sendError(res, "The Spouse Profile Not Exists");
-    // };
-
-    // const userProfileRepo = AppDataSource.getRepository(Profile);
-    // const userProfile = await userProfileRepo.findOne({
-    //   where: { added_by: userId },
-    //   order: { added_on: 'DESC' } as FindOneOptions['order']
-    // });
-    // if (!userProfile) {
-    //   return sendError(res, "Please add your Profile");
-    // };
-
     const token = geenrateToken();
-    const base_url = process.env.FRONT_BASE_URL;
-    const invitationLink = `<a href="${base_url}/accept-invitation/${token}" target="_blank" style="font-size: 16px; font-weight: bold; background-color: #6699FF; text-decoration: none; display: inline-block; padding: 12px 24px; border-radius: 25px;">Click Here To Accept Invitation</a>`;
-
-    const subject = "Edutax: Spousal Invitation";
-    // const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const message = "<h1>Please Click on the below link to ACCEPT the Spousal Invitation</h1><br><br>Click on the given link : " + invitationLink;
-    await sendEmail(email, subject, message);
+    await sendSpouseInvitationMail(email, existingUser?.email, token);
 
     existingUser.spouse_invite_token = token;
     existingUser.spouse_email = spouse_email;

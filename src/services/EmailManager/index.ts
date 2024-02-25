@@ -25,6 +25,52 @@ export const sendEmailVerification = async(to:string, otp:string)=>{
 }
 
 
+export const sendForgetPasswordOtp = async(to:string, otp:string)=>{
+  const subject = "Edutax: Password Recovery";
+  const message = `Dear Sir/Mam,
+  <br>\n
+  <br>\n
+  Please enter the following one-time password (OTP) to recover your password:<br>\n
+  <br>\n
+  <br>\n
+  
+  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
+  <br>\n
+  <br>\n
+  If you have any questions, please do not hesitate to contact us.
+  <br>\n
+  <br>\n
+  Sincerely,
+  <br>\n
+  <h3>The Edutax Team</h3>`
+  const send  = await sendEmail(to,subject,message)
+ return send
+}
+
+
+export const sendSpouseInvitationMail = async(to:string, from:string, token:string)=>{
+  const subject = "Edutax: Spouse linking request";
+
+  const message = `Dear Sir/Mam,
+  <br>\n
+  <br>\n
+  You got a spouse linking invitation from ${from}. Click the link given below accept the invitation.<br>\n
+  <br>\n
+  <br>\n
+  <a href="${process.env.FRONT_BASE_URL}/accept-invitation/${token}" target="_blank" style="font-size: 16px; font-weight: bold; background-color: #6699FF; text-decoration: none; display: inline-block; padding: 12px 24px; border-radius: 25px;">Click Here To Accept Invitation</a>
+  <br>\n
+  <br>\n
+  If you have any questions, please do not hesitate to contact us.
+  <br>\n
+  <br>\n
+  Sincerely,
+  <br>\n
+  <h3>The Edutax Team</h3>`
+  const send  = await sendEmail(to,subject,message)
+ return send
+}
+
+
 
 // Create a transporter object using SMTP or other transport methods
 const transporter = nodemailer.createTransport({
