@@ -15,6 +15,7 @@ import { sendEmail } from '../utils/sendMail';
 import { Templates } from '../entites/Templates';
 import bcrypt from 'bcrypt';
 import { MoreThan } from 'typeorm';
+import { Profile } from '../entites/Profile';
 
 
 export const login = async (req: Request, res: Response) => {
@@ -286,17 +287,29 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     //   [id]
     // );
 
+    // const taxfile = await taxRepo.findOne({
+    //   where: { id: id }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+    //     user_detail: {
+    //       email: true,
+    //     },
+    //   }
+    // });
     const taxfile = await taxRepo.findOne({
-      where: { id: id }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
-        user_detail: {
-          email: true,
-        },
-      }
+      where: { id: id }
     });
 
     if (!taxfile) {
       return res.status(400).json({ message: 'Taxfile not found' });
     }
+
+         const user_id = taxfile.user_id;
+        const profileRepo = AppDataSource.getRepository(Profile);
+        const profile = await profileRepo.findOne({
+          where: { user_id: user_id }, relations: ['marital_status_detail', 'province_detail']
+        });
+        if (!profile) {
+          return sendError(res, "Profile Not Found");
+        }
 
     const documentsRepo = AppDataSource.getRepository(Documents);
     const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, is_deleted: false }, relations: ['type'] });
@@ -306,7 +319,7 @@ export const taxfileDetail = async (req: Request, res: Response) => {
 
     const base_url = process.env.BASE_URL;
 
-    const taxfileMod: any = { ...taxfile, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}` }
+    const taxfileMod: any = { ...taxfile, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`,profile:profile }
 
     const documentsWithPath = documents.map(doc => ({
       ...doc,

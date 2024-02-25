@@ -5,6 +5,7 @@ import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
 import { MaritalStatus } from "./MaritalStatus";
 import { Provinces } from "./Provinces";
 import { User } from "./User";
+import { Profile } from "./Profile";
 
 @Entity()
 export class Taxfile {
@@ -114,5 +115,9 @@ export class Taxfile {
     @JoinColumn({ name: 'user_id' })
     user_detail: User
 
+
+    // @ManyToOne(() => Profile, (profile) => profile.taxfiles)
+    // @JoinColumn({ name: 'profile_id_fk' })
+    // profile_detail: Profile
 
 }

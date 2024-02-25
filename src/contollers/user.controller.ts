@@ -117,17 +117,17 @@ export const addTaxfile = async (req: Request, res: Response) => {
     }
 
     const taxfile = new Taxfile();
-    taxfile.profile_id_fk = profile.id
-    taxfile.firstname = profile.firstname;
-    taxfile.lastname = profile.lastname;
-    taxfile.date_of_birth = profile.date_of_birth;
-    taxfile.marital_status = profile.marital_status;
-    taxfile.street_number = profile.street_number;
-    taxfile.street_name = profile.street_name;
-    taxfile.city = profile.city;
-    taxfile.province = profile.province;
-    taxfile.postal_code = profile.postal_code;
-    taxfile.mobile_number = profile.mobile_number;
+    // taxfile.profile_id_fk = profile.id
+    // taxfile.firstname = profile.firstname;
+    // taxfile.lastname = profile.lastname;
+    // taxfile.date_of_birth = profile.date_of_birth;
+    // taxfile.marital_status = profile.marital_status;
+    // taxfile.street_number = profile.street_number;
+    // taxfile.street_name = profile.street_name;
+    // taxfile.city = profile.city;
+    // taxfile.province = profile.province;
+    // taxfile.postal_code = profile.postal_code;
+    // taxfile.mobile_number = profile.mobile_number;
     taxfile.tax_year = '2022';
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
@@ -419,18 +419,33 @@ export const taxFileDetails = async (req: Request, res: Response) => {
     }
     const userId = req?.userId;
     const taxRepo = AppDataSource.getRepository(Taxfile);
-    // const taxfile = await taxRepo.findOne({ where: { id: id, user_id: userId } });
+    // const taxfile = await taxRepo.findOne({
+    //   where: { id: id, user_id: userId }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
+    //     user_detail: {
+    //       email: true,
+    //     },
+    //   }
+    // });
+    // const taxfile = await taxRepo.findOne({
+    //   where: { id: id, user_id: userId }, relations: ['marital_status_detail', 'province_detail', 'profile_detail']
+    // });
     const taxfile = await taxRepo.findOne({
-      where: { id: id, user_id: userId }, relations: ['marital_status_detail', 'province_detail', 'user_detail'], select: {
-        user_detail: {
-          email: true,
-        },
-      }
+      where: { id: id, user_id: userId }
     });
 
     if (!taxfile) {
       return sendError(res, "Taxfile Not Found");
     }
+
+    // const profile_id = taxfile.profile_id_fk;
+    const profileRepo = AppDataSource.getRepository(Profile);
+    const profile = await profileRepo.findOne({
+      where: { user_id: userId }, relations: ['marital_status_detail', 'province_detail']
+    });
+    if (!profile) {
+      return sendError(res, "Profile Not Found");
+    }
+
 
 
     const documentsRepo = AppDataSource.getRepository(Documents);
@@ -447,7 +462,8 @@ export const taxFileDetails = async (req: Request, res: Response) => {
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    const taxfileMod = { ...taxfile, documents: documentsWithPath, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}` }
+    let taxfileMod = { ...taxfile, documents: documentsWithPath, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`,profile:profile };
+
     return sendSuccess(res, 'Success', { taxfile: taxfileMod });
   } catch (e) {
     return handleCatch(res, e);
