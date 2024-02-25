@@ -7,7 +7,7 @@ import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../u
 import { sendEmail } from '../utils/sendMail';
 import { Profile } from '../entites/Profile';
 import bcrypt from 'bcrypt';
-import { sendEmailVerification } from '../services/EmailManager';
+import { sendEmailVerification, sendForgetPasswordOtp } from '../services/EmailManager';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -149,12 +149,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: email, id_status: "ACTIVE" } });
     if (user) {
-      const subject = "Edutax: Forgot Pasword";
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const message = "<h1>Please use the Given OTP for New Password</h1><br><br>OTP: " + otp;
-      await sendEmail(email, subject, message);
+      await sendForgetPasswordOtp(email, otp);
       user.otp = otp;
-      // await userRepository.save(user);
       await userRepository.update(user.id, user);
 
       return sendSuccess(res, "OTP Sent Successfully on Registered Email", {}, 201);
