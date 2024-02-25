@@ -1,5 +1,31 @@
 import nodemailer from "nodemailer";
 
+
+
+export const sendEmailVerification = async(to:string, otp:string)=>{
+  const subject = "Edutax: Verify Email Address";
+  const message = `Dear Sir/Mam,
+  <br>\n
+  <br>\n
+  Thank you for signing up for our services. To verify your email address, please enter the following one-time password (OTP) in the app:<br>\n
+  <br>\n
+  <br>\n
+  
+  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
+  <br>\n
+  <br>\n
+  If you have any questions, please do not hesitate to contact us.
+  <br>\n
+  <br>\n
+  Sincerely,
+  <br>\n
+  <h3>The Edutax Team</h3>`
+  const send  = await sendEmail(to,subject,message)
+ return send
+}
+
+
+
 // Create a transporter object using SMTP or other transport methods
 const transporter = nodemailer.createTransport({
   service: "Gmail", // Replace with your email service (e.g., 'Gmail', 'Outlook')
@@ -34,8 +60,7 @@ export const sendEmail = async (to:string, subject:string, message:string) => {
                 width: 100%;
                 padding: 1em;
                 background: #2d87ca;
-            
-        text-align:center
+                text-align:center
             ">
             <div style="text-align: center;">
             <h2 style="font-size:2.5em; color:white">EduTax</h2></div>

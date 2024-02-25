@@ -7,6 +7,7 @@ import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../u
 import { sendEmail } from '../utils/sendMail';
 import { Profile } from '../entites/Profile';
 import bcrypt from 'bcrypt';
+import { sendEmailVerification } from '../services/EmailManager';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -30,10 +31,8 @@ export const signUp = async (req: Request, res: Response) => {
       saveNewUser = false;
     }
 
-    const subject = "Edutax: Verify Email Address";
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const message = "<h1>Please use the Given OTP to verify Your Email Address</h1><br><br>OTP: " + otp;
-    await sendEmail(email, subject, message);
+    await sendEmailVerification(email,otp);
 
     const token = geenrateToken();
     if (saveNewUser == true) {
