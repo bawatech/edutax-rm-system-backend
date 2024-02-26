@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, OneToOne, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, OneToOne, JoinColumn, ManyToOne, OneToMany, AfterLoad } from "typeorm";
 import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "class-validator";
 // import { isValidPhoneNumber } from 'libphonenumber-js';
 import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
@@ -7,6 +7,7 @@ import { IsSin } from "./dataValidations/isSin";
 import { MaritalStatus } from "./MaritalStatus";
 import { Provinces } from "./Provinces";
 import { Taxfile } from "./Taxfile";
+import { dec, enc } from "../utils/commonFunctions";
 
 @Entity()
 export class Profile {
@@ -56,14 +57,17 @@ export class Profile {
     @IsPostalCode("CA", { message: 'Invalid Postal code' })
     postal_code: string;
 
-    @Column()
+    @Column({ type: "text" })
     @Matches(/^(\+?1\s?)?(\([2-9][0-9]{2}\)|[2-9][0-9]{2})[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/, { //This expression allows for various formats, including with or without the country code, with or without parentheses, and with or without separators such as hyphens or spaces.
         message: 'Invalid Canadian mobile number'
     })
-    mobile_number: string;
+    mobile_number: string | undefined;
 
     @Column({ nullable: true })
     user_id: number;
+
+    @Column({ nullable: true })
+    mob_last_digits: number;
 
     @Column({ type: "timestamp", nullable: true })
     added_on: Date;
@@ -102,4 +106,20 @@ export class Profile {
 
     // @OneToMany(() => Taxfile, (taxfile) => taxfile.profile_detail)
     // taxfiles: Taxfile[]
+
+    // get _mobile_number(): any | undefined {
+    //     return dec(this.mobile_number);
+    // }
+
+    @BeforeInsert()
+    encodeMobile() {
+        this.mobile_number = enc(this.mobile_number);
+    }
+
+    @AfterLoad()
+    decodeMobile() {
+        this.mobile_number = dec(this.mobile_number);
+    }
+
+
 }

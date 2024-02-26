@@ -7,7 +7,7 @@ import { handleCatch, requestDataValidation, sendError, sendSuccess } from '../u
 import { sendEmail } from '../utils/sendMail';
 import { Profile } from '../entites/Profile';
 import bcrypt from 'bcrypt';
-import { sendEmailVerification, sendForgetPasswordOtp } from '../services/EmailManager';
+import { sendEmailVerification, sendForgetPasswordOtp, sendLoginVerification } from '../services/EmailManager';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -32,7 +32,7 @@ export const signUp = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await sendEmailVerification(email,otp);
+    await sendEmailVerification(email, otp);
 
     const token = geenrateToken();
     if (saveNewUser == true) {
@@ -79,9 +79,57 @@ export const login = async (req: Request, res: Response) => {
       return sendError(res, "Invalid password");
     }
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await sendLoginVerification(email, otp);
+
+    user.otp = otp;
+    const newOtp = await userRepository.update(user.id, user);
+
+    if (!newOtp) {
+      return sendError(res, "Unable to set Otp");
+    }
+
+    // const token = geenrateToken();
+    // const userLog = new UserLog();
+    // userLog.user_id_fk = user.id;
+    // userLog.key = token;
+    // userLog.added_on = new Date();
+    // const userLogRepository = AppDataSource.getRepository(UserLog);
+    // await userLogRepository.save(userLog);
+    // const profileRepo = AppDataSource.getRepository(Profile)
+    // const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
+
+    return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", {});
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const verifyLogin = async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+
+  if (!email) {
+    return sendError(res, "Please provide Email")
+  }
+
+  if (!otp) {
+    return sendError(res, "Please provide Otp")
+  }
+
+  try {
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { otp: otp, email: email, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "Wrong Otp")
+    }
+
+    user.otp = '';
+    const user_id = user.id;
+    await userRepository.update(user.id, user);
+
     const token = geenrateToken();
     const userLog = new UserLog();
-    userLog.user_id_fk = user.id;
+    userLog.user_id_fk = user_id;
     userLog.key = token;
     userLog.added_on = new Date();
     const userLogRepository = AppDataSource.getRepository(UserLog);
@@ -89,7 +137,9 @@ export const login = async (req: Request, res: Response) => {
     const profileRepo = AppDataSource.getRepository(Profile)
     const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
 
-    return sendSuccess(res, "LoggedIn successfully", { token, user, profile });
+    return sendSuccess(res, "Logged In Successfully", { token, user, profile }, 201);
+
+
   } catch (e) {
     return handleCatch(res, e);
   }

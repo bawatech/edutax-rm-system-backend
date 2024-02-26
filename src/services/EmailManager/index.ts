@@ -1,6 +1,26 @@
 import nodemailer from "nodemailer";
 
-
+export const sendLoginVerification = async(to:string, otp:string)=>{
+  const subject = "Edutax: Verify Login Otp";
+  const message = `Dear Sir/Mam,
+  <br>\n
+  <br>\n
+  Thank you for Logging In for our services. To verify yourself, please enter the following one-time password (OTP) in the app:<br>\n
+  <br>\n
+  <br>\n
+  
+  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
+  <br>\n
+  <br>\n
+  If you have any questions, please do not hesitate to contact us.
+  <br>\n
+  <br>\n
+  Sincerely,
+  <br>\n
+  <h3>The Edutax Team</h3>`
+  const send  = await sendEmail(to,subject,message)
+ return send
+}
 
 export const sendEmailVerification = async(to:string, otp:string)=>{
   const subject = "Edutax: Verify Email Address";

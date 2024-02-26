@@ -120,4 +120,6 @@ export class Taxfile {
     // @JoinColumn({ name: 'profile_id_fk' })
     // profile_detail: Profile
 
+
+    
 }

@@ -16,6 +16,7 @@ import { DocumentTypes } from '../entites/DocumentTypes';
 import { sendEmail } from '../utils/sendMail';
 import { v4 as uuidv4 } from 'uuid';
 import { sendSpouseInvitationMail } from '../services/EmailManager';
+import { dec, enc } from '../utils/commonFunctions';
 
 
 
@@ -55,6 +56,7 @@ export const updateProfile = async (req: Request, res: Response) => {
       profile.added_on = new Date();
     }
 
+    
     profile.firstname = firstname;
     profile.lastname = lastname;
     profile.date_of_birth = date_of_birth;
@@ -65,12 +67,15 @@ export const updateProfile = async (req: Request, res: Response) => {
     profile.province = province;
     profile.postal_code = postal_code;
     profile.sin = sin;
-    profile.mobile_number = mobile_number?.replace(/\D/g, '')?.slice(-10);
+    profile.mobile_number = mobile_number;
     profile.user = user!;
     profile.updated_on = new Date();
     profile.updated_by = userId;
 
-    await requestDataValidation(profile)
+    await requestDataValidation(profile);
+
+    profile.mobile_number = mobile_number?.replace(/\D/g, '')?.slice(-10); //after validation splice
+    profile.mob_last_digits = mobile_number?.replace(/\D/g, '')?.slice(-5);
 
     await profileRepo.save(profile);
 
@@ -87,6 +92,14 @@ export const getProfile = async (req: Request, res: Response) => {
     const userId = req?.userId;
     const profileRepo = AppDataSource.getRepository(Profile)
     let profile = await profileRepo.findOne({ where: { user_id: userId }, relations: ['user', 'marital_status_detail', 'province_detail'] });
+    // if (profile) {
+    //   if (profile.mobile_number) {
+    //     profile.mobile_number = dec(profile.mobile_number) ?? '';
+    //   }
+    // }
+    if (!profile) {
+      return sendError(res, "Unable to fetch profile");
+    }
     sendSuccess(res, "Success", { profile })
 
   } catch (e) {
@@ -132,9 +145,15 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.tax_year = '2022';
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
-    taxfile.date_of_entry = date_of_entry;
+    if(moved_to_canada == "YES"){
+      taxfile.date_of_entry = date_of_entry;
+    }
     taxfile.direct_deposit_cra = direct_deposit_cra;
-    taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
+    if(direct_deposit_cra == "YES"){
+      taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
+    }else{
+      unlinkSingleFile(singleFile?.filename);
+    }
     taxfile.added_by = userId;
     taxfile.added_on = new Date();
     taxfile.user_id = userId;
@@ -319,9 +338,15 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     taxfile.tax_year = tax_year;
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
-    taxfile.date_of_entry = date_of_entry;
+    if(moved_to_canada == "YES"){
+      taxfile.date_of_entry = date_of_entry;
+    }
     taxfile.direct_deposit_cra = direct_deposit_cra;
-    taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
+    if(direct_deposit_cra == "YES"){
+      taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; 
+    }else{
+      unlinkSingleFile(singleFile?.filename);
+    }
     taxfile.updated_by = userId;
     taxfile.updated_on = new Date();
 
