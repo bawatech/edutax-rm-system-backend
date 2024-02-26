@@ -37,6 +37,15 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
             return res.status(401).json({ message: "Invalid token." });
         }
 
+        const tokenTime = new Date(userLog.added_on);
+        const currentTime = new Date();
+
+        const timeDiff = Math.abs(currentTime.getTime() - tokenTime.getTime());
+        const diffInMinutes = Math.floor(timeDiff / (1000 * 60));
+        if (diffInMinutes > 30) {
+            return res.status(401).json({ message: "Session Expired" });
+        }
+
         const userId = userLog.user_id_fk;
 
         (req as any).userId = userId;
