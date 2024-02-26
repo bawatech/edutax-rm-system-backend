@@ -112,13 +112,13 @@ export const verifyLogin = async (req: Request, res: Response) => {
     return sendError(res, "Please provide Email")
   }
 
-  if (!otp) {
-    return sendError(res, "Please provide Otp")
-  }
+  // if (!otp) {
+  //   return sendError(res, "Please provide Otp")
+  // }
 
   try {
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { otp: otp, email: email, id_status: "ACTIVE", is_deleted: false } });
+    const user = await userRepository.findOne({ where: {  email: email, id_status: "ACTIVE", is_deleted: false } });
     if (!user) {
       return sendError(res, "Wrong Otp")
     }
@@ -135,7 +135,7 @@ export const verifyLogin = async (req: Request, res: Response) => {
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
     const profileRepo = AppDataSource.getRepository(Profile)
-    const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
+    const profile = await profileRepo.findOne({ where: { user: { id: user?.id } },relations: ['marital_status_detail', 'province_detail'] })
 
     return sendSuccess(res, "Logged In Successfully", { token, user, profile }, 201);
 

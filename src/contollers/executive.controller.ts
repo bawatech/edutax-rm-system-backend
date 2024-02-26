@@ -302,14 +302,14 @@ export const taxfileDetail = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Taxfile not found' });
     }
 
-         const user_id = taxfile.user_id;
-        const profileRepo = AppDataSource.getRepository(Profile);
-        const profile = await profileRepo.findOne({
-          where: { user_id: user_id }, relations: ['marital_status_detail', 'province_detail']
-        });
-        if (!profile) {
-          return sendError(res, "Profile Not Found");
-        }
+    const user_id = taxfile.user_id;
+    const profileRepo = AppDataSource.getRepository(Profile);
+    const profile = await profileRepo.findOne({
+      where: { user_id: user_id }, relations: ['marital_status_detail', 'province_detail']
+    });
+    if (!profile) {
+      return sendError(res, "Profile Not Found");
+    }
 
     const documentsRepo = AppDataSource.getRepository(Documents);
     const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, is_deleted: false }, relations: ['type'] });
@@ -319,14 +319,19 @@ export const taxfileDetail = async (req: Request, res: Response) => {
 
     const base_url = process.env.BASE_URL;
 
-    const taxfileMod: any = { ...taxfile, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`,profile:profile }
+    const direct_deposit_cra = taxfile.direct_deposit_cra;
 
     const documentsWithPath = documents.map(doc => ({
       ...doc,
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    taxfileMod.documents = documentsWithPath;
+    let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
+
+    if (direct_deposit_cra == "YES") {
+      taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
+    }
+
 
     // taxfile.client_message_count = 0;
     const updateCount = await taxRepo.update(taxfile.id, { client_message_count: 0 });

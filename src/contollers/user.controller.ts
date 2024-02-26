@@ -56,7 +56,7 @@ export const updateProfile = async (req: Request, res: Response) => {
       profile.added_on = new Date();
     }
 
-    
+
     profile.firstname = firstname;
     profile.lastname = lastname;
     profile.date_of_birth = date_of_birth;
@@ -145,13 +145,13 @@ export const addTaxfile = async (req: Request, res: Response) => {
     taxfile.tax_year = '2022';
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
-    if(moved_to_canada == "YES"){
+    if (moved_to_canada == "YES") {
       taxfile.date_of_entry = date_of_entry;
     }
     taxfile.direct_deposit_cra = direct_deposit_cra;
-    if(direct_deposit_cra == "YES"){
+    if (direct_deposit_cra == "YES") {
       taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; //the expression evaluates to '' (an empty string)
-    }else{
+    } else {
       unlinkSingleFile(singleFile?.filename);
     }
     taxfile.added_by = userId;
@@ -338,13 +338,13 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     taxfile.tax_year = tax_year;
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
-    if(moved_to_canada == "YES"){
+    if (moved_to_canada == "YES") {
       taxfile.date_of_entry = date_of_entry;
     }
     taxfile.direct_deposit_cra = direct_deposit_cra;
-    if(direct_deposit_cra == "YES"){
-      taxfile.document_direct_deposit_cra = singleFile?.filename ?? ''; 
-    }else{
+    if (direct_deposit_cra == "YES") {
+      taxfile.document_direct_deposit_cra = singleFile?.filename ?? '';
+    } else {
       unlinkSingleFile(singleFile?.filename);
     }
     taxfile.updated_by = userId;
@@ -482,13 +482,18 @@ export const taxFileDetails = async (req: Request, res: Response) => {
 
     const base_url = process.env.BASE_URL;
 
+    const direct_deposit_cra = taxfile.direct_deposit_cra;
 
     const documentsWithPath = documents.map(doc => ({
       ...doc,
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    let taxfileMod = { ...taxfile, documents: documentsWithPath, document_direct_deposit_cra: `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`,profile:profile };
+    let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
+
+    if (direct_deposit_cra == "YES") {
+      taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
+    }
 
     return sendSuccess(res, 'Success', { taxfile: taxfileMod });
   } catch (e) {
@@ -744,7 +749,7 @@ export const unlinkSpouse = async (req: Request, res: Response) => {
 
     await spouseRepo.update(existingSpouse.id, { spouse_invite_token: "", spouse_invite_status: "UNLINKED", spouse_email: "" });
 
-    return sendSuccess(res, "Unlinked successfully.", {invitation_status: "UNLINKED",spouse_email: ""}, 201);
+    return sendSuccess(res, "Unlinked successfully.", { invitation_status: "UNLINKED", spouse_email: "" }, 201);
 
   } catch (e) {
     return handleCatch(res, e);
