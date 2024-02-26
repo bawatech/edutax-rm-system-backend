@@ -112,13 +112,13 @@ export const verifyLogin = async (req: Request, res: Response) => {
     return sendError(res, "Please provide Email")
   }
 
-  // if (!otp) {
-  //   return sendError(res, "Please provide Otp")
-  // }
+  if (!otp) {
+    return sendError(res, "Please provide Otp")
+  }
 
   try {
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: {  email: email, id_status: "ACTIVE", is_deleted: false } });
+    const user = await userRepository.findOne({ where: { otp:otp, email: email, id_status: "ACTIVE", is_deleted: false } });
     if (!user) {
       return sendError(res, "Wrong Otp")
     }
@@ -146,7 +146,11 @@ export const verifyLogin = async (req: Request, res: Response) => {
 };
 
 export const verifyEmail = async (req: Request, res: Response) => {
-  const { otp } = req.body;
+  const { email , otp } = req.body;
+
+  if (!email || email?.trim() === "" || email?.length <= 0) {
+    return sendError(res, "Email is required");
+  }
 
   if (!otp) {
     return sendError(res, "Please provide otp")
@@ -155,7 +159,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const userId = req?.userId;
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { otp: otp, id: userId, verify_status: "PENDING", id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { otp: otp, email: email, id: userId, verify_status: "PENDING", id_status: "ACTIVE" } });
     if (user) {
       user.otp = '';
       user.verify_status = 'VERIFIED';
@@ -259,6 +263,9 @@ export const updatePassword = async (req: Request, res: Response) => {
   const userId = req?.userId;
 
   const { oldPassword, newPassword } = req.body;
+  if (!newPassword) {
+    return sendError(res, "New Password is required");
+  }
 
   try {
 

@@ -483,6 +483,7 @@ export const taxFileDetails = async (req: Request, res: Response) => {
     const base_url = process.env.BASE_URL;
 
     const direct_deposit_cra = taxfile.direct_deposit_cra;
+    const document_direct_deposit_cra = taxfile.document_direct_deposit_cra;
 
     const documentsWithPath = documents.map(doc => ({
       ...doc,
@@ -492,7 +493,15 @@ export const taxFileDetails = async (req: Request, res: Response) => {
     let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
 
     if (direct_deposit_cra == "YES") {
-      taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
+      if(document_direct_deposit_cra!= null && document_direct_deposit_cra!= "" && document_direct_deposit_cra!= undefined){
+        let single_filepath = path.join(__dirname, '..', '..', 'storage', 'documents', taxfile.document_direct_deposit_cra);
+        if (fs.existsSync(single_filepath)) {
+          taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
+        }
+      }else{
+        (taxfileMod as any).showSingleDocument = false;
+      }
+      
     }
 
     return sendSuccess(res, 'Success', { taxfile: taxfileMod });
@@ -580,6 +589,9 @@ export const getClientMessages = async (req: Request, res: Response) => {
   try {
 
     const taxfile_id = parseInt(req?.params?.id)
+    if (!taxfile_id) {
+      return sendError(res, "Taxfile Id is Required");
+    }
 
     const userId = req?.userId;
 
@@ -687,6 +699,9 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
 
 export const acceptSpouseInvitation = async (req: Request, res: Response) => {
   const token = req?.params?.token
+  if (!token) {
+    return sendError(res, "Token is Required");
+  }
   try {
 
     const userRepo = AppDataSource.getRepository(User);

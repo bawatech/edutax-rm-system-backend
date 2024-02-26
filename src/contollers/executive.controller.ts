@@ -16,6 +16,8 @@ import { Templates } from '../entites/Templates';
 import bcrypt from 'bcrypt';
 import { MoreThan } from 'typeorm';
 import { Profile } from '../entites/Profile';
+import fs from "fs";
+import path from "path";
 
 
 export const login = async (req: Request, res: Response) => {
@@ -195,6 +197,9 @@ export const getExecutiveMessages = async (req: Request, res: Response) => {
   // const { token, taxfile_id } = req.body;
   try {
     const taxfile_id = parseInt(req?.params?.id)
+    if (!taxfile_id) {
+      return sendError(res, "Taxfile Id is required");
+    }
 
     const execId = req?.execId;
     // if (!token) {
@@ -320,6 +325,7 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     const base_url = process.env.BASE_URL;
 
     const direct_deposit_cra = taxfile.direct_deposit_cra;
+    const document_direct_deposit_cra = taxfile.document_direct_deposit_cra;
 
     const documentsWithPath = documents.map(doc => ({
       ...doc,
@@ -329,7 +335,15 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
 
     if (direct_deposit_cra == "YES") {
-      taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
+      if(document_direct_deposit_cra!= null && document_direct_deposit_cra!= "" && document_direct_deposit_cra!= undefined){
+        let single_filepath = path.join(__dirname, '..', '..', 'storage', 'documents', taxfile.document_direct_deposit_cra);
+        if (fs.existsSync(single_filepath)) {
+          taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
+        }
+      }else{
+        (taxfileMod as any).showSingleDocument = false;
+      }
+      
     }
 
 
@@ -407,7 +421,9 @@ export const updatePassword = async (req: Request, res: Response) => {
   const execId = req?.execId;
 
   const { oldPassword, newPassword } = req.body;
-
+  if (!newPassword) {
+    return sendError(res, "Please provide new Password");
+  }
   try {
     const hashedPassword_old = await bcrypt.hash(oldPassword, 10);
 
@@ -441,6 +457,13 @@ export const updatePassword = async (req: Request, res: Response) => {
 
 export const addExecutive = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
+  if (!email) {
+    return sendError(res, "Email is Required");
+  }
+
+  if (!password) {
+    return sendError(res, "Password is Required");
+  }
   const adminId = req?.execId;
   try {
     const executive = new Executive();
@@ -513,6 +536,10 @@ export const addTemplate = async (req: Request, res: Response) => {
   const { code, title, description } = req.body;
   if (!code) {
     return sendError(res, "Code is required");
+  }
+
+  if (!title) {
+    return sendError(res, "Title is required");
   }
 
   const adminId = req?.execId;
