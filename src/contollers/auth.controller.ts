@@ -29,9 +29,12 @@ export const signUp = async (req: Request, res: Response) => {
     user.password = hashedPassword;
 
     const userRepository = AppDataSource.getRepository(User);
-    const existingUser: any = await userRepository.findOne({ where: { email: enc_email, verify_status: "PENDING" } });
+    const existingUser: any = await userRepository.findOne({ where: { email: enc_email } });
     let saveNewUser = true;
     if (existingUser) {
+      if(existingUser?.verify_status == 'VERIFIED'){
+        return sendError(res, "This email has been already used");
+      }
       saveNewUser = false;
     }
 
