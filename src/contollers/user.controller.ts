@@ -74,11 +74,12 @@ export const updateProfile = async (req: Request, res: Response) => {
 
     await requestDataValidation(profile);
 
-    profile.mobile_number = mobile_number?.replace(/\D/g, '')?.slice(-10); //after validation splice
+    profile.mobile_number = enc(mobile_number?.replace(/\D/g, '')?.slice(-10)) ?? ''; //after validation splice
     profile.mob_last_digits = mobile_number?.replace(/\D/g, '')?.slice(-5);
 
     await profileRepo.save(profile);
 
+    profile.mobile_number = dec(profile.mobile_number);
     res.status(201).json({ message: 'Success', profile });
   } catch (e) {
     return handleCatch(res, e);
@@ -100,6 +101,8 @@ export const getProfile = async (req: Request, res: Response) => {
     if (!profile) {
       return sendError(res, "Unable to fetch profile");
     }
+
+    profile.mobile_number = dec(profile.mobile_number);
     sendSuccess(res, "Success", { profile })
 
   } catch (e) {
@@ -471,7 +474,7 @@ export const taxFileDetails = async (req: Request, res: Response) => {
     if (!profile) {
       return sendError(res, "Profile Not Found");
     }
-
+    profile.mobile_number = dec(profile.mobile_number);
 
 
     const documentsRepo = AppDataSource.getRepository(Documents);
@@ -493,15 +496,15 @@ export const taxFileDetails = async (req: Request, res: Response) => {
     let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
 
     if (direct_deposit_cra == "YES") {
-      if(document_direct_deposit_cra!= null && document_direct_deposit_cra!= "" && document_direct_deposit_cra!= undefined){
+      if (document_direct_deposit_cra != null && document_direct_deposit_cra != "" && document_direct_deposit_cra != undefined) {
         let single_filepath = path.join(__dirname, '..', '..', 'storage', 'documents', taxfile.document_direct_deposit_cra);
         if (fs.existsSync(single_filepath)) {
           taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
         }
-      }else{
+      } else {
         (taxfileMod as any).showSingleDocument = false;
       }
-      
+
     }
 
     return sendSuccess(res, 'Success', { taxfile: taxfileMod });
@@ -532,6 +535,84 @@ export const userTaxFileList = async (req: Request, res: Response) => {
     return handleCatch(res, e);
   }
 };
+
+
+export const addClientMsgAll = async (req: Request, res: Response) => {
+  const { message } = req.body;
+  if (!message || message?.trim() === "" || message?.length <= 0) {
+    return sendError(res, "Please Provide message");
+  }
+  try {
+    const userId = req?.userId;
+
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id: userId, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "User Not Exists");
+    }
+
+    const msgRepo = AppDataSource.getRepository(Messages);
+    const msgTab = new Messages();
+    msgTab.message = message;
+    msgTab.category = "GENERAL";
+    msgTab.user_type = "CLIENT";
+    msgTab.client_id_fk = userId;
+    msgTab.reply_to_id_fk = userId;
+    msgTab.added_by = userId;
+    let msgTime = new Date();
+    msgTab.added_on = msgTime;
+
+    await requestDataValidation(msgTab);
+    const saveMsg = await msgRepo.save(msgTab);
+    if (!saveMsg) {
+      return sendError(res, "Unable to Save Message");
+    }
+
+    let clientMsgCount = parseInt(String(user.client_message_count)) || 0;
+    if (clientMsgCount >= 0) {
+      clientMsgCount = clientMsgCount + 1;
+    } else {
+      clientMsgCount = 1;
+    }
+    user.client_message_count = clientMsgCount;
+    user.client_last_msg_time = msgTime;
+    const updateCount = await userRepo.update(user.id, user);
+    if (!updateCount) {
+      return sendError(res, "Unable to update Message Count");
+    }
+
+    return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+export const getClientMsgAll = async (req: Request, res: Response) => {
+  try {
+    const userId = req?.userId;
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id: userId, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "User Not Exists");
+    }
+
+    const messageRepository = AppDataSource.getRepository(Messages);
+    const messages = await messageRepository.find({
+      where: { reply_to_id_fk: userId }, relations: ['executive_detail'], select: {
+        executive_detail: {
+          name: true,
+        },
+      }
+    });
+
+    return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
 
 export const addClientMessage = async (req: Request, res: Response) => {
   const { message, taxfile_id } = req.body;
@@ -662,10 +743,10 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
     return sendError(res, "Please Provide Email");
   }
   try {
-
+    let enc_email = enc(email);
     const spouseRepo = AppDataSource.getRepository(User);
 
-    const existingSpouse = await spouseRepo.findOne({ where: { email: email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: Not(userId), spouse_invite_status: Not("LINKED") } });
+    const existingSpouse = await spouseRepo.findOne({ where: { email: enc_email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: Not(userId), spouse_invite_status: Not("LINKED") } });
     if (!existingSpouse) {
       return sendError(res, "Spouse Not Found/Verification Pending/Already Linked");
     };
@@ -677,13 +758,13 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
     };
 
     const spouse_id = existingSpouse.id;
-    const spouse_email = existingSpouse.email;
+    const spouse_email = email;
 
     const token = geenrateToken();
-    await sendSpouseInvitationMail(email, existingUser?.email, token);
+    await sendSpouseInvitationMail(email, dec(existingUser?.email), token);
 
     existingUser.spouse_invite_token = token;
-    existingUser.spouse_email = spouse_email;
+    existingUser.spouse_email = enc(spouse_email);
     existingUser.spouse_id = spouse_id;
     existingUser.spouse_invite_status = "SENT";
 
@@ -785,7 +866,7 @@ export const getSpouse = async (req: Request, res: Response) => {
     const spouse_id_ifAny = invitationStatus?.spouse_id;
     const spouse_email_ifAny = invitationStatus?.spouse_email;
     if (currentInvitationStatus == "SENT") {
-      return sendSuccess(res, "Invitation Already Sent", { spouse_email: spouse_email_ifAny, invitation_status: "SENT" }, 201);
+      return sendSuccess(res, "Invitation Already Sent", { spouse_email: dec(spouse_email_ifAny), invitation_status: "SENT" }, 201);
     } else if (currentInvitationStatus == "UNLINKED") {
       return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "UNLINKED" }, 201);
     } else if (currentInvitationStatus == "LINKED") {
@@ -796,7 +877,7 @@ export const getSpouse = async (req: Request, res: Response) => {
         return sendSuccess(res, "No Spouse is Linked Yet", { spouse_email: "", invitation_status: "UNLINKED" }, 201);
       }
 
-      return sendSuccess(res, "You have one Linked Spouse", { spouse_email: spouse_email_ifAny, invitation_status: "LINKED" }, 201);
+      return sendSuccess(res, "You have one Linked Spouse", { spouse_email: dec(spouse_email_ifAny), invitation_status: "LINKED" }, 201);
     }
 
   } catch (e) {

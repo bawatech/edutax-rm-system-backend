@@ -31,7 +31,8 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
     }
 
     try {
-        const userLog = await AppDataSource.getRepository(UserLog).findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
+        const userLogRepo = AppDataSource.getRepository(UserLog);
+        const userLog = await userLogRepo.findOne({ where: { key: token, is_deleted: false, id_status: "ACTIVE" } });
 
         if (!userLog) {
             return res.status(401).json({ message: "Invalid token." });
@@ -43,6 +44,9 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
         const timeDiff = Math.abs(currentTime.getTime() - tokenTime.getTime());
         const diffInMinutes = Math.floor(timeDiff / (1000 * 60));
         if (diffInMinutes > 30) {
+            userLog.id_status = "INACTIVE";
+            userLog.is_deleted = true;
+            await userLogRepo.update(userLog.id, userLog);
             return res.status(401).json({ message: "Session Expired" });
         }
 

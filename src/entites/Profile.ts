@@ -31,8 +31,11 @@ export class Profile {
     })
     date_of_birth: Date;
 
-    @Column()
-    @IsSin()
+    // @Column()
+    // @IsSin()
+    // sin: string;
+
+    @Column({default: null,nullable: true})
     sin: string;
 
     @Column({ nullable: true })
@@ -61,7 +64,7 @@ export class Profile {
     @Matches(/^(\+?1\s?)?(\([2-9][0-9]{2}\)|[2-9][0-9]{2})[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$/, { //This expression allows for various formats, including with or without the country code, with or without parentheses, and with or without separators such as hyphens or spaces.
         message: 'Invalid Canadian mobile number'
     })
-    mobile_number: string | undefined;
+    mobile_number: string;
 
     @Column({ nullable: true })
     user_id: number;
@@ -111,15 +114,18 @@ export class Profile {
     //     return dec(this.mobile_number);
     // }
 
-    @BeforeInsert()
-    encodeMobile() {
-        this.mobile_number = enc(this.mobile_number);
-    }
+    // @BeforeInsert()
+    // encodeMobile() {
+    //     this.mobile_number = enc(this.mobile_number) ?? '';
+    // }
 
-    @AfterLoad()
-    decodeMobile() {
-        this.mobile_number = dec(this.mobile_number);
-    }
+    // @AfterLoad()
+    // decodeMobile() {
+    //     this.mobile_number = dec(this.mobile_number) ?? '';
+    // }
 
-
+    // @BeforeUpdate()
+    // encodeMobile2() {
+    //     this.mobile_number = enc(this.mobile_number) ?? '';
+    // }
 }

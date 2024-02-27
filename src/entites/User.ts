@@ -63,6 +63,12 @@ export class User {
     @Column({ nullable: true })
     deleted_by: number;
 
+    @Column({ default: 0, nullable: true })
+    client_message_count: number;
+
+    @Column({ type: "timestamp", nullable: true })
+    client_last_msg_time: Date;
+
     @OneToMany(() => Messages, (message) => message.user_detail)
     profiles: Messages[]
 

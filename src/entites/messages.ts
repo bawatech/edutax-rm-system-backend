@@ -9,16 +9,16 @@ export class Messages {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column()
+    @Column({ nullable: true })
     taxfile_id_fk: number;
 
-    @Column({ type: "text",nullable: true })
+    @Column({ type: "text", nullable: true })
     message: string;
 
-    @Column({ default: 'GENERAL'})
+    @Column({ default: 'GENERAL', nullable: true })
     category: string;
 
-    @Column({ type: 'enum', enum: ['CLIENT', 'EXECUTIVE'],nullable: true })
+    @Column({ type: 'enum', enum: ['CLIENT', 'EXECUTIVE'], nullable: true })
     user_type: string;
 
     @Column({ nullable: true })
@@ -26,6 +26,9 @@ export class Messages {
 
     @Column({ nullable: true })
     executive_id_fk: number;
+
+    @Column({ nullable: true })
+    reply_to_id_fk: number;
 
 
     @Column({ type: "timestamp", nullable: true })

@@ -18,6 +18,8 @@ import { MoreThan } from 'typeorm';
 import { Profile } from '../entites/Profile';
 import fs from "fs";
 import path from "path";
+import { dec } from '../utils/commonFunctions';
+import { User } from '../entites/User';
 
 
 export const login = async (req: Request, res: Response) => {
@@ -138,6 +140,87 @@ export const getTaxfileStatus = async (req: Request, res: Response) => {
   }
 };
 
+
+
+export const addExecutiveMsgAll = async (req: Request, res: Response) => {
+  const { message, user_id, category } = req.body;
+  if (!user_id) {
+    return sendError(res, "Please provide Id of user")
+  }
+  if (!message || message?.trim() === "" || message?.length <= 0) {
+    return sendError(res, "Please Provide message");
+  }
+  try {
+    const execId = req?.execId;
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id: user_id, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "User Not Exists");
+    }
+
+    const templateRepo = AppDataSource.getRepository(Templates);
+    const template = await templateRepo.findOne({ where: { code: category, is_deleted: false, id_status: "ACTIVE" } });
+    const is_fixed = template?.is_fixed;
+    const is_fixed_category: any = template?.code;
+
+    const msgRepo = AppDataSource.getRepository(Messages);
+    const msgTab = new Messages();
+    msgTab.reply_to_id_fk = user_id;
+    msgTab.message = message;
+    if (is_fixed != true) {
+      msgTab.category = "GENERAL";
+    } else {
+      msgTab.category = is_fixed_category;
+    }
+    msgTab.user_type = "EXECUTIVE";
+    msgTab.executive_id_fk = execId;
+    msgTab.added_by = execId;
+    msgTab.added_on = new Date();
+
+    await requestDataValidation(msgTab);
+
+    await msgRepo.save(msgTab);
+    return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const getExecutiveMsgAll = async (req: Request, res: Response) => {
+  try {
+    const user_id = parseInt(req?.params?.id)
+    if (!user_id) {
+      return sendError(res, "Please Provide Id of User");
+    }
+
+    const execId = req?.execId;
+
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id: user_id, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "User Not Exists");
+    }
+
+    const messageRepository = AppDataSource.getRepository(Messages);
+    const messages = await messageRepository.find({
+      where: { reply_to_id_fk: user_id }, relations: ['executive_detail'], select: {
+        executive_detail: {
+          name: true,
+        },
+      }
+    });
+
+    return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+
+
 export const addExecutiveMessage = async (req: Request, res: Response) => {
   const { message, taxfile_id, category } = req.body;
   if (!taxfile_id) {
@@ -241,15 +324,24 @@ export const getExecutiveMessages = async (req: Request, res: Response) => {
 export const taxfilesList = async (req: Request, res: Response) => {
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
-    const taxfiles = await taxfilesRepo.find({
-      relations: ['user_detail'], select: {
-        user_detail: {
-          email: true,
-        },
-      }
+    // const taxfiles = await taxfilesRepo.find({
+    //   relations: ['user_detail'], select: {
+    //     user_detail: {
+    //       email: true,
+    //     },
+    //   }
+    // });
+
+    const taxfiles = await taxfilesRepo.query(
+      `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = p.code`,
+    );
+
+    const taxfilesDecoded = taxfiles.map((taxfile: any) => {
+      const decodedMobileNumber = dec(taxfile.mobile_number);
+      return { ...taxfile, mobile_number: decodedMobileNumber };
     });
 
-    return sendSuccess(res, "Taxfiles Fetched Successfully", { taxfiles }, 200);
+    return sendSuccess(res, "Taxfiles Fetched Successfully", { taxfiles: taxfilesDecoded }, 200);
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -316,6 +408,8 @@ export const taxfileDetail = async (req: Request, res: Response) => {
       return sendError(res, "Profile Not Found");
     }
 
+    profile.mobile_number = dec(profile.mobile_number);
+
     const documentsRepo = AppDataSource.getRepository(Documents);
     const documents = await documentsRepo.find({ where: { taxfile_id_fk: id, is_deleted: false }, relations: ['type'] });
     if (!documents) {
@@ -335,15 +429,15 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
 
     if (direct_deposit_cra == "YES") {
-      if(document_direct_deposit_cra!= null && document_direct_deposit_cra!= "" && document_direct_deposit_cra!= undefined){
+      if (document_direct_deposit_cra != null && document_direct_deposit_cra != "" && document_direct_deposit_cra != undefined) {
         let single_filepath = path.join(__dirname, '..', '..', 'storage', 'documents', taxfile.document_direct_deposit_cra);
         if (fs.existsSync(single_filepath)) {
           taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
         }
-      }else{
+      } else {
         (taxfileMod as any).showSingleDocument = false;
       }
-      
+
     }
 
 

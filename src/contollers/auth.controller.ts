@@ -8,6 +8,7 @@ import { sendEmail } from '../utils/sendMail';
 import { Profile } from '../entites/Profile';
 import bcrypt from 'bcrypt';
 import { sendEmailVerification, sendForgetPasswordOtp, sendLoginVerification } from '../services/EmailManager';
+import { dec, enc } from '../utils/commonFunctions';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -21,11 +22,14 @@ export const signUp = async (req: Request, res: Response) => {
     user.added_on = new Date();
     await requestDataValidation(user);
 
+    let enc_email = enc(email);
+    user.email = enc_email;
+
     const hashedPassword = await bcrypt.hash(password, 10);
     user.password = hashedPassword;
 
     const userRepository = AppDataSource.getRepository(User);
-    const existingUser: any = await userRepository.findOne({ where: { email: email, verify_status: "PENDING" } });
+    const existingUser: any = await userRepository.findOne({ where: { email: enc_email, verify_status: "PENDING" } });
     let saveNewUser = true;
     if (existingUser) {
       saveNewUser = false;
@@ -35,13 +39,17 @@ export const signUp = async (req: Request, res: Response) => {
     await sendEmailVerification(email, otp);
 
     const token = geenrateToken();
-    let newUser = existingUser
+    let userData = existingUser;
     if (saveNewUser == true) {
       user.otp = otp;
-      newUser = await userRepository.save(user);
+      userData = await userRepository.save(user);
+
+      if (!userData) {
+        return sendError(res, "Unable to Signup");
+      }
 
       const userLog = new UserLog();
-      userLog.user_id_fk = newUser.id;
+      userLog.user_id_fk = userData.id;
       userLog.key = token;
       const userLogRepository = AppDataSource.getRepository(UserLog);
       await userLogRepository.save(userLog);
@@ -49,8 +57,9 @@ export const signUp = async (req: Request, res: Response) => {
       existingUser.otp = otp;
       await userRepository.update(existingUser.id, existingUser);
     }
+    userData.email = dec(userData.email);
 
-    return sendSuccess(res, "Signed up successfully. Please verify your Email", { token, user:newUser }, 201);
+    return sendSuccess(res, "Signed up successfully. Please verify your Email", { token, user: userData }, 201);
 
   } catch (e) {
     return handleCatch(res, e);
@@ -66,9 +75,9 @@ export const login = async (req: Request, res: Response) => {
     return sendError(res, "Email and Password are required");
   }
   try {
-
+    let enc_email = enc(email);
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: email, id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE" } });
     if (!user) {
       return sendError(res, "Invalid email");
     }
@@ -100,7 +109,7 @@ export const login = async (req: Request, res: Response) => {
     // const profileRepo = AppDataSource.getRepository(Profile)
     // const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
 
-    return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", {email});
+    return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", { email: email });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -118,13 +127,16 @@ export const verifyLogin = async (req: Request, res: Response) => {
   }
 
   try {
+    let enc_email = enc(email);
+
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { otp:otp, email: email, id_status: "ACTIVE", is_deleted: false } });
+    const user = await userRepository.findOne({ where: { otp: otp, email: enc_email, id_status: "ACTIVE", is_deleted: false } });
     if (!user) {
       return sendError(res, "Wrong Otp")
     }
 
     user.otp = '';
+    user.verify_status = 'VERIFIED';
     const user_id = user.id;
     await userRepository.update(user.id, user);
 
@@ -136,7 +148,13 @@ export const verifyLogin = async (req: Request, res: Response) => {
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
     const profileRepo = AppDataSource.getRepository(Profile)
-    const profile = await profileRepo.findOne({ where: { user: { id: user?.id } },relations: ['marital_status_detail', 'province_detail'] })
+    const profile = await profileRepo.findOne({ where: { user: { id: user?.id } }, relations: ['marital_status_detail', 'province_detail'] });
+
+    user.email = dec(user.email);
+    if (profile) {
+      profile.mobile_number = dec(profile.mobile_number);
+    }
+
 
     return sendSuccess(res, "Logged In Successfully", { token, user, profile }, 201);
 
@@ -147,7 +165,7 @@ export const verifyLogin = async (req: Request, res: Response) => {
 };
 
 export const verifyEmail = async (req: Request, res: Response) => {
-  const { email , otp } = req.body;
+  const { email, otp } = req.body;
 
   if (!email || email?.trim() === "" || email?.length <= 0) {
     return sendError(res, "Email is required");
@@ -158,9 +176,11 @@ export const verifyEmail = async (req: Request, res: Response) => {
   }
 
   try {
+    let enc_email = enc(email);
+
     const userId = req?.userId;
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { otp: otp, email: email, id: userId, verify_status: "PENDING", id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { otp: otp, email: enc_email, id: userId, verify_status: "PENDING", id_status: "ACTIVE" } });
     if (user) {
       user.otp = '';
       user.verify_status = 'VERIFIED';
@@ -201,8 +221,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     return sendError(res, "Email is required");
   }
   try {
+    let enc_email = enc(email);
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: email, id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE",is_deleted:false } });
     if (user) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       await sendForgetPasswordOtp(email, otp);
@@ -238,8 +259,9 @@ export const newPassword = async (req: Request, res: Response) => {
     if (!/[#@!$%&]/.test(newPassword)) {
       return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
     }
+    let enc_email = enc(email);
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: email, otp: otp, id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { email: enc_email, otp: otp, id_status: "ACTIVE" } });
     if (user) {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       user.password = hashedPassword;
