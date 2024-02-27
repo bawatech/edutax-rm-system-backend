@@ -365,6 +365,21 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
 };
 
 
+export const userListWithCount = async (req: Request, res: Response) => {
+  try {
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.find({ where: { id_status: "ACTIVE", is_deleted: false, client_message_count: MoreThan(0) } });
+    if (!user) {
+      return sendError(res, "Unable to fetch Records");
+    }
+
+    return sendSuccess(res, "Success", { user }, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
 export const taxfileDetail = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req?.params?.id)

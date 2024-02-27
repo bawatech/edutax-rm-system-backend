@@ -51,6 +51,8 @@ export const signUp = async (req: Request, res: Response) => {
       const userLog = new UserLog();
       userLog.user_id_fk = userData.id;
       userLog.key = token;
+      userLog.added_on = new Date();
+      userLog.added_by = userData.id;
       const userLogRepository = AppDataSource.getRepository(UserLog);
       await userLogRepository.save(userLog);
     } else {
@@ -185,9 +187,22 @@ export const verifyEmail = async (req: Request, res: Response) => {
       user.otp = '';
       user.verify_status = 'VERIFIED';
       //await userRepository.save(user);
-      await userRepository.update(user.id, user);
+      const verified = await userRepository.update(user.id, user);
+      if (!verified) {
+        return sendError(res, "Verification Failed");
+      }
 
-      return sendSuccess(res, "Email Verified Successfully", { user }, 201);
+      const token = geenrateToken();
+      const userLog = new UserLog();
+      userLog.user_id_fk = userId;
+      userLog.key = token;
+      userLog.added_on = new Date();
+      userLog.added_by = userId;
+      const userLogRepository = AppDataSource.getRepository(UserLog);
+      await userLogRepository.save(userLog);
+
+
+      return sendSuccess(res, "Email Verified Successfully", { token, user }, 201);
     } else {
       return sendError(res, "Wrong Email or Otp");
     }
@@ -223,7 +238,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   try {
     let enc_email = enc(email);
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE",is_deleted:false } });
+    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
     if (user) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       await sendForgetPasswordOtp(email, otp);
