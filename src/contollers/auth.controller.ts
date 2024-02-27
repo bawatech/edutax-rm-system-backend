@@ -35,9 +35,10 @@ export const signUp = async (req: Request, res: Response) => {
     await sendEmailVerification(email, otp);
 
     const token = geenrateToken();
+    let newUser = existingUser
     if (saveNewUser == true) {
       user.otp = otp;
-      const newUser = await userRepository.save(user);
+      newUser = await userRepository.save(user);
 
       const userLog = new UserLog();
       userLog.user_id_fk = newUser.id;
@@ -49,7 +50,7 @@ export const signUp = async (req: Request, res: Response) => {
       await userRepository.update(existingUser.id, existingUser);
     }
 
-    return sendSuccess(res, "Signed up successfully. Please verify your Email", { token, user }, 201);
+    return sendSuccess(res, "Signed up successfully. Please verify your Email", { token, user:newUser }, 201);
 
   } catch (e) {
     return handleCatch(res, e);

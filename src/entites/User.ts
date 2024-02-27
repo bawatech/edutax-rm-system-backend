@@ -21,7 +21,7 @@ export class User {
     @IsUniqueUser()
     email: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, select:false })
     otp: string;
 
     @Column({ default: 'PENDING', type: 'enum', enum: ['PENDING', 'VERIFIED']})
