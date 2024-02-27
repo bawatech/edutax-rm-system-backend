@@ -145,7 +145,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     // taxfile.province = profile.province;
     // taxfile.postal_code = profile.postal_code;
     // taxfile.mobile_number = profile.mobile_number;
-    taxfile.tax_year = '2022';
+    taxfile.tax_year = '2023';
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
     if (moved_to_canada == "YES") {

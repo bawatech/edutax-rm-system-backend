@@ -182,7 +182,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
     const userId = req?.userId;
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { otp: otp, email: enc_email, id: userId, verify_status: "PENDING", id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { otp: otp, email: enc_email, verify_status: "PENDING", id_status: "ACTIVE" } });
     if (user) {
       user.otp = '';
       user.verify_status = 'VERIFIED';
@@ -194,10 +194,10 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
       const token = geenrateToken();
       const userLog = new UserLog();
-      userLog.user_id_fk = userId;
+      userLog.user_id_fk = user?.id;
       userLog.key = token;
       userLog.added_on = new Date();
-      userLog.added_by = userId;
+      userLog.added_by = user?.id;
       const userLogRepository = AppDataSource.getRepository(UserLog);
       await userLogRepository.save(userLog);
 
