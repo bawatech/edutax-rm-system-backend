@@ -770,6 +770,8 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
 
     await userRepo.update(existingUser.id, existingUser);
 
+    
+
     return sendSuccess(res, "Invitation Sent successfully.", { spouse_email: spouse_email, invitation_status: "SENT" }, 201);
 
   } catch (e) {

@@ -32,7 +32,7 @@ export const signUp = async (req: Request, res: Response) => {
     const existingUser: any = await userRepository.findOne({ where: { email: enc_email } });
     let saveNewUser = true;
     if (existingUser) {
-      if(existingUser?.verify_status == 'VERIFIED'){
+      if (existingUser?.verify_status == 'VERIFIED') {
         return sendError(res, "This email has been already used");
       }
       saveNewUser = false;
@@ -51,18 +51,28 @@ export const signUp = async (req: Request, res: Response) => {
         return sendError(res, "Unable to Signup");
       }
 
-      const userLog = new UserLog();
-      userLog.user_id_fk = userData.id;
-      userLog.key = token;
-      userLog.added_on = new Date();
-      userLog.added_by = userData.id;
-      const userLogRepository = AppDataSource.getRepository(UserLog);
-      await userLogRepository.save(userLog);
     } else {
       existingUser.otp = otp;
       await userRepository.update(existingUser.id, existingUser);
     }
+    const userLog = new UserLog();
+    userLog.user_id_fk = userData.id;
+    userLog.key = token;
+    userLog.added_on = new Date();
+    userLog.added_by = userData.id;
+    const userLogRepository = AppDataSource.getRepository(UserLog);
+    await userLogRepository.save(userLog);
+
+
     userData.email = dec(userData.email);
+
+    if ('otp' in userData) {
+      delete (userData as any).otp;
+    }
+    if ('password' in userData) {
+      delete (userData as any).password;
+    }
+
 
     return sendSuccess(res, "Signed up successfully. Please verify your Email", { token, user: userData }, 201);
 
@@ -114,6 +124,7 @@ export const login = async (req: Request, res: Response) => {
     // const profileRepo = AppDataSource.getRepository(Profile)
     // const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
 
+
     return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", { email: email });
   } catch (e) {
     return handleCatch(res, e);
@@ -159,7 +170,6 @@ export const verifyLogin = async (req: Request, res: Response) => {
     if (profile) {
       profile.mobile_number = dec(profile.mobile_number);
     }
-
 
     return sendSuccess(res, "Logged In Successfully", { token, user, profile }, 201);
 

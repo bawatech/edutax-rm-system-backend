@@ -385,7 +385,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
 
       return sendSuccess(res, "Messages Fetched Successfully", { list: msgDecoded }, 200);
 
-    } else {
+    } else if(unread == "true" || unread == true) {
 
       const userRepo = AppDataSource.getRepository(User);
       // const user = await userRepo.find({

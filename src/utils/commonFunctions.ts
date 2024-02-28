@@ -57,3 +57,13 @@ export const dec = (value: any) => {
     }
     return '';
 }
+
+
+// export const delProp = (value: any, obj: object) => {
+//     if (value in obj) {
+//         delete (obj as any).value;
+//         return obj;
+//     } else {
+//         return obj;
+//     }
+// }
