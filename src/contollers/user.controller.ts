@@ -761,7 +761,7 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
     const spouse_email = email;
 
     const token = geenrateToken();
-    await sendSpouseInvitationMail(email, dec(existingUser?.email), token);
+    sendSpouseInvitationMail(email, dec(existingUser?.email), token);
 
     existingUser.spouse_invite_token = token;
     existingUser.spouse_email = enc(spouse_email);

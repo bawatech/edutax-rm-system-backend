@@ -520,7 +520,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
       const subject = "Edutax: Forgot Pasword";
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const message = "<h1>Please use the Given OTP for New Password</h1><br><br>OTP: " + otp;
-      await sendEmail(email, subject, message);
+      sendEmail(email, subject, message);
       exec.otp = otp;
       await execRepo.update(exec.id, exec);
 

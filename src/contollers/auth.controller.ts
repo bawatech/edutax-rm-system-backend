@@ -39,7 +39,7 @@ export const signUp = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await sendEmailVerification(email, otp);
+    sendEmailVerification(email, otp);
 
     const token = geenrateToken();
     let userData = existingUser;
@@ -95,7 +95,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await sendLoginVerification(email, otp);
+    sendLoginVerification(email, otp);
 
     user.otp = otp;
     const newOtp = await userRepository.update(user.id, user);
@@ -244,7 +244,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
     if (user) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      await sendForgetPasswordOtp(email, otp);
+      sendForgetPasswordOtp(email, otp);
       user.otp = otp;
       await userRepository.update(user.id, user);
 

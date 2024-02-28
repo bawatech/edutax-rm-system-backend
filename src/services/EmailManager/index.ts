@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-export const sendLoginVerification = async(to:string, otp:string)=>{
+export const sendLoginVerification = async (to: string, otp: string) => {
   const subject = "Edutax: Verify Login Otp";
   const message = `Dear Sir/Mam,
   <br>\n
@@ -18,34 +18,37 @@ export const sendLoginVerification = async(to:string, otp:string)=>{
   Sincerely,
   <br>\n
   <h3>The Edutax Team</h3>`
-  const send  = await sendEmail(to,subject,message)
- return send
+  const send = await sendEmail(to, subject, message)
+  return send
 }
 
-export const sendEmailVerification = async(to:string, otp:string)=>{
+export const sendEmailVerification = async (to: string, otp: string) => {
+
   const subject = "Edutax: Verify Email Address";
   const message = `Dear Sir/Mam,
-  <br>\n
-  <br>\n
-  Thank you for signing up for our services. To verify your email address, please enter the following one-time password (OTP) in the app:<br>\n
-  <br>\n
-  <br>\n
-  
-  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
-  <br>\n
-  <br>\n
-  If you have any questions, please do not hesitate to contact us.
-  <br>\n
-  <br>\n
-  Sincerely,
-  <br>\n
-  <h3>The Edutax Team</h3>`
-  const send  = await sendEmail(to,subject,message)
- return send
+    <br>\n
+    <br>\n
+    Thank you for signing up for our services. To verify your email address, please enter the following one-time password (OTP) in the app:<br>\n
+    <br>\n
+    <br>\n
+    
+    <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
+    <br>\n
+    <br>\n
+    If you have any questions, please do not hesitate to contact us.
+    <br>\n
+    <br>\n
+    Sincerely,
+    <br>\n
+    <h3>The Edutax Team</h3>`
+  const send = await sendEmail(to, subject, message)
+  return send
+
+
 }
 
 
-export const sendForgetPasswordOtp = async(to:string, otp:string)=>{
+export const sendForgetPasswordOtp = async (to: string, otp: string) => {
   const subject = "Edutax: Password Recovery";
   const message = `Dear Sir/Mam,
   <br>\n
@@ -63,12 +66,12 @@ export const sendForgetPasswordOtp = async(to:string, otp:string)=>{
   Sincerely,
   <br>\n
   <h3>The Edutax Team</h3>`
-  const send  = await sendEmail(to,subject,message)
- return send
+  const send = await sendEmail(to, subject, message)
+  return send
 }
 
 
-export const sendSpouseInvitationMail = async(to:string, from:string, token:string)=>{
+export const sendSpouseInvitationMail = async (to: string, from: string, token: string) => {
   const subject = "Edutax: Spouse linking request";
 
   const message = `Dear Sir/Mam,
@@ -86,24 +89,25 @@ export const sendSpouseInvitationMail = async(to:string, from:string, token:stri
   Sincerely,
   <br>\n
   <h3>The Edutax Team</h3>`
-  const send  = await sendEmail(to,subject,message)
- return send
+  const send = await sendEmail(to, subject, message)
+  return send
 }
 
 
 
 // Create a transporter object using SMTP or other transport methods
 const transporter = nodemailer.createTransport({
-  service: "Gmail", // Replace with your email service (e.g., 'Gmail', 'Outlook')
+  host: "smtp.office365.com",
+  port: 587,
   auth: {
-    user: "deepnirmaan8@gmail.com", // Your email address
-    pass: "uklsrsrgrbpfspjf", // Your email password or application-specific password
-  },
+    user: "contact@edutax.ca",
+    pass: "370980Aa@", 
+  }
 });
 
 // Create a function to send the email
-export const sendEmail = async (to:string, subject:string, message:string) => {
-    const header = `<!DOCTYPE html>
+export const sendEmail = async (to: string, subject: string, message: string) => {
+  const header = `<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
@@ -134,7 +138,7 @@ export const sendEmail = async (to:string, subject:string, message:string) => {
     
     
         <div style="padding: 5em 0;padding:40px;">`;
-    const footer = `</div>
+  const footer = `</div>
 
 
     <div style="
@@ -147,13 +151,13 @@ export const sendEmail = async (to:string, subject:string, message:string) => {
     </div>
 </body>
 </html>`;
-    const messageBody = `${header}<br>${message}<br>${footer}`;
+  const messageBody = `${header}<br>${message}<br>${footer}`;
   try {
     // Send mail with defined transport object
     const info = await transporter.sendMail({
       from: {
         name: "Edutax",
-        address: "deepnirmaan8@gmail.com",
+        address: "contact@edutax.ca",
       },
       to: to, // Recipient email address
       subject: subject, // Subject of the email
@@ -166,8 +170,8 @@ export const sendEmail = async (to:string, subject:string, message:string) => {
     return true;
   } catch (error) {
     //console.error("Error occurred while sending the email:", error);
-   // throw error;
-   throw new Error('Failed to send email.');
+    // throw error;
+    throw new Error('Failed to send email.');
     //return false;
   }
 };
