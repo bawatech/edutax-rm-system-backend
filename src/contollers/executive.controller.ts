@@ -366,14 +366,53 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
 
 
 export const userMsgListCount = async (req: Request, res: Response) => {
+  const { unread } = req?.query;
   try {
-    const userRepo = AppDataSource.getRepository(User);
-    const user = await userRepo.find({ where: { id_status: "ACTIVE", is_deleted: false, client_message_count: MoreThan(0) } });
-    if (!user) {
-      return sendError(res, "Unable to fetch Records");
+    if (!unread || unread != "true") {
+      const messageRepository = AppDataSource.getRepository(Messages);
+      const messages = await messageRepository.query(
+        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time, prof.firstname,prof.lastname FROM messages msg LEFT JOIN user us ON msg.reply_to_id_fk = us.id LEFT JOIN profile prof ON us.id = prof.user_id WHERE msg.user_type = 'CLIENT' AND us.id_status = 'ACTIVE' AND us.is_deleted = 'false' GROUP BY msg.reply_to_id_fk`,
+      );
+
+      const msgDecoded = messages.map((msg: any) => {
+        const decodedEmail = dec(msg.user_email);
+        return { ...msg, user_email: decodedEmail };
+      });
+
+      if (!messages) {
+        return sendError(res, "Unable to fetch Records");
+      }
+
+      return sendSuccess(res, "Messages Fetched Successfully", { list: msgDecoded }, 200);
+
+    } else {
+
+      const userRepo = AppDataSource.getRepository(User);
+      // const user = await userRepo.find({
+      //   where: { id_status: "ACTIVE", is_deleted: false, client_message_count: MoreThan(0) }, select: {
+      //     id: true,ss
+      //     email: true,
+      //     client_message_count: true,
+      //     client_last_msg_time: true,
+
+      //   }
+      // });
+      const user = await userRepo.query(
+        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false' AND client_message_count > 0`,
+      );
+      const usDecoded = user.map((us: any) => {
+        const decodedEmail = dec(us.user_email);
+        return { ...us, user_email: decodedEmail };
+      });
+
+
+      if (!user) {
+        return sendError(res, "Unable to fetch Records");
+      }
+      return sendSuccess(res, "Success", { list: usDecoded }, 200);
+
     }
 
-    return sendSuccess(res, "Success", { user }, 200);
   } catch (e) {
     return handleCatch(res, e);
   }
