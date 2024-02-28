@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { acceptSpouseInvitation, addClientMessage, addClientMsgAll, addTaxfile, getClientMessages, getClientMsgAll, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, getSpouse, sendSpouseInvitation, taxFileDetails, unlinkSpouse, updateProfile, updateTaxfile, userTaxFileList } from "../contollers/user.controller";
+import { acceptSpouseInvitation, addClientMessage, addClientMsg, addTaxfile, getClientMessages, getClientMsg, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, getSpouse, sendSpouseInvitation, taxFileDetails, unlinkSpouse, updateProfile, updateTaxfile, userTaxFileList } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -56,13 +56,11 @@ router.put("/taxfile", clientAuth, upload.any(), updateTaxfile);
 //router.route("/upload-documents").post(upload.any(), uploadDocuments);
 
 
-// router.route("/add-client-message").post(clientAuth, addClientMessage);
-// router.route("/get-client-messages/:id").get(clientAuth, getClientMessages);
-router.post("/message", clientAuth, addClientMessage);
-router.get("/message/:id", clientAuth, getClientMessages);
+// router.post("/message", clientAuth, addClientMessage);
+// router.get("/message/:id", clientAuth, getClientMessages);
 
-router.post("/message-all", clientAuth, addClientMsgAll);
-router.get("/message-all/", clientAuth, getClientMsgAll);
+router.post("/message", clientAuth, addClientMsg);
+router.get("/message", clientAuth, getClientMsg);
 
 
 

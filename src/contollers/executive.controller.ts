@@ -142,7 +142,7 @@ export const getTaxfileStatus = async (req: Request, res: Response) => {
 
 
 
-export const addExecutiveMsgAll = async (req: Request, res: Response) => {
+export const addExecutiveMsg = async (req: Request, res: Response) => {
   const { message, user_id, category } = req.body;
   if (!user_id) {
     return sendError(res, "Please provide Id of user")
@@ -187,7 +187,7 @@ export const addExecutiveMsgAll = async (req: Request, res: Response) => {
   }
 };
 
-export const getExecutiveMsgAll = async (req: Request, res: Response) => {
+export const getExecutiveMsg = async (req: Request, res: Response) => {
   try {
     const user_id = parseInt(req?.params?.id)
     if (!user_id) {
@@ -365,7 +365,7 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
 };
 
 
-export const userListWithCount = async (req: Request, res: Response) => {
+export const userMsgListCount = async (req: Request, res: Response) => {
   try {
     const userRepo = AppDataSource.getRepository(User);
     const user = await userRepo.find({ where: { id_status: "ACTIVE", is_deleted: false, client_message_count: MoreThan(0) } });

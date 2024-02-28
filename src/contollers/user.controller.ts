@@ -537,7 +537,7 @@ export const userTaxFileList = async (req: Request, res: Response) => {
 };
 
 
-export const addClientMsgAll = async (req: Request, res: Response) => {
+export const addClientMsg = async (req: Request, res: Response) => {
   const { message } = req.body;
   if (!message || message?.trim() === "" || message?.length <= 0) {
     return sendError(res, "Please Provide message");
@@ -587,7 +587,7 @@ export const addClientMsgAll = async (req: Request, res: Response) => {
     return handleCatch(res, e);
   }
 };
-export const getClientMsgAll = async (req: Request, res: Response) => {
+export const getClientMsg = async (req: Request, res: Response) => {
   try {
     const userId = req?.userId;
     const userRepo = AppDataSource.getRepository(User);
