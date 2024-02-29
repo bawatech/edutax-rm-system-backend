@@ -4,6 +4,7 @@ import multer from 'multer';
 import fs from "fs";
 import path from "path";
 import { clientAuth } from "../middlewares/clientAuth";
+import { validateUpdateProfile } from "../utils/validate";
 
 const router = Router();
 
@@ -64,7 +65,7 @@ router.get("/message", clientAuth, getClientMsg);
 
 
 
-router.put("/profile", clientAuth, updateProfile);
+router.put("/profile", validateUpdateProfile, clientAuth, updateProfile);
 router.get("/profile", clientAuth, getProfile);
 
 

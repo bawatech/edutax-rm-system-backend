@@ -42,6 +42,10 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateProfile = async (req: Request, res: Response) => {
   const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin, street_number } = req.body;
 
+  // if(!marital_status){
+  //   return sendError(res, "Marital Status is required");
+  // }
+
   try {
     const userId = req?.userId;
     //const dobDate = new Date(date_of_birth);
@@ -336,6 +340,11 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     const taxfile = await taxfileRepo.findOne({ where: { user_id: userId, id: id } });
     if (!taxfile) {
       return sendError(res, "Taxfile Not Found");
+    }
+
+    const file_status = taxfile.file_status;
+    if(file_status != "NEEDS_RESUBMISSION"){
+      return sendError(res, "Updation not allowed.Please review your file status");
     }
 
     taxfile.tax_year = tax_year;

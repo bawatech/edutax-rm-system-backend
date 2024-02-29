@@ -8,6 +8,7 @@ import { MaritalStatus } from "./MaritalStatus";
 import { Provinces } from "./Provinces";
 import { Taxfile } from "./Taxfile";
 import { dec, enc } from "../utils/commonFunctions";
+import { IsProvince } from "./dataValidations/IsProvince";
 
 @Entity()
 export class Profile {
@@ -52,7 +53,7 @@ export class Profile {
     city: string;
 
     @Column()
-    // @IsAlphanumeric()
+    @IsProvince()
     @MaxLength(100, { message: 'The value must be alphanumeric and have a maximum length of $constraint1 characters' })
     province: string;
 
