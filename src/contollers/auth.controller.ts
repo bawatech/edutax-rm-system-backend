@@ -131,6 +131,35 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+export const resendLoginOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email || email?.trim() === "" || email?.length <= 0) {
+    return sendError(res, "Email is required");
+  }
+  try {
+    let enc_email = enc(email);
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "Invalid email");
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    sendLoginVerification(email, otp);
+
+    user.otp = otp;
+    const newOtp = await userRepository.update(user.id, user);
+
+    if (!newOtp) {
+      return sendError(res, "Unable to set Otp");
+    }
+
+    return sendSuccess(res, "Otp sent again Successfully", { email: email });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
 export const verifyLogin = async (req: Request, res: Response) => {
   const { email, otp } = req.body;
 

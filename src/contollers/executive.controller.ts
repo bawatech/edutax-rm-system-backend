@@ -211,6 +211,11 @@ export const getExecutiveMsg = async (req: Request, res: Response) => {
       }
     });
 
+    const updateCount = await userRepo.update(user.id, { client_message_count: 0 });
+    if (!updateCount) {
+      return sendError(res, "Unable to Reset Message Count");
+    }
+
     return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
 
   } catch (e) {
@@ -333,12 +338,16 @@ export const taxfilesList = async (req: Request, res: Response) => {
     // });
 
     const taxfiles = await taxfilesRepo.query(
-      `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = p.code`,
+      `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id`,
     );
+    // const taxfiles = await taxfilesRepo.query(
+    //   `SELECT t.id AS id,t.moved_to_canada,t.date_of_entry,t.direct_deposit_cra,t.document_direct_deposit_cra,t.file_status,t.tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = p.code`,
+    // );
 
     const taxfilesDecoded = taxfiles.map((taxfile: any) => {
       const decodedMobileNumber = dec(taxfile.mobile_number);
-      return { ...taxfile, mobile_number: decodedMobileNumber };
+      const decodedEmail = dec(taxfile.email);
+      return { ...taxfile, mobile_number: decodedMobileNumber, email: decodedEmail };
     });
 
     return sendSuccess(res, "Taxfiles Fetched Successfully", { taxfiles: taxfilesDecoded }, 200);
@@ -371,7 +380,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
     if (!unread || unread != "true") {
       const messageRepository = AppDataSource.getRepository(Messages);
       const messages = await messageRepository.query(
-        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time, prof.firstname,prof.lastname FROM messages msg LEFT JOIN user us ON msg.reply_to_id_fk = us.id LEFT JOIN profile prof ON us.id = prof.user_id WHERE msg.user_type = 'CLIENT' AND us.id_status = 'ACTIVE' AND us.is_deleted = 'false' GROUP BY msg.reply_to_id_fk`,
+        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM messages msg LEFT JOIN user us ON msg.reply_to_id_fk = us.id LEFT JOIN profile prof ON us.id = prof.user_id WHERE msg.user_type = 'CLIENT' AND us.id_status = 'ACTIVE' AND us.is_deleted = 'false' GROUP BY msg.reply_to_id_fk`,
       );
 
       const msgDecoded = messages.map((msg: any) => {
@@ -385,7 +394,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
 
       return sendSuccess(res, "Messages Fetched Successfully", { list: msgDecoded }, 200);
 
-    } else if(unread == "true" || unread == true) {
+    } else if (unread == "true" || unread == true) {
 
       const userRepo = AppDataSource.getRepository(User);
       // const user = await userRepo.find({
@@ -398,7 +407,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       //   }
       // });
       const user = await userRepo.query(
-        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false' AND client_message_count > 0`,
+        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false' AND client_message_count > 0`,
       );
       const usDecoded = user.map((us: any) => {
         const decodedEmail = dec(us.user_email);

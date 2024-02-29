@@ -44,7 +44,7 @@ export const validateNewPass = validate([
         .notEmpty().withMessage(required).bail()
         .isEmail().withMessage(InvalidFormat),
     body('otp').notEmpty().withMessage(required),
-    body('password').notEmpty().withMessage(required),
+    body('newPassword').notEmpty().withMessage(required),
 ]);
 
 

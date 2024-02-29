@@ -66,6 +66,9 @@ export class User {
     @Column({ default: 0, nullable: true })
     client_message_count: number;
 
+    @Column({ type: "text", nullable: true })
+    client_last_msg: string;
+
     @Column({ type: "timestamp", nullable: true })
     client_last_msg_time: Date;
 

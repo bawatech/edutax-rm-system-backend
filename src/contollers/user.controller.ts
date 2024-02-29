@@ -576,6 +576,7 @@ export const addClientMsg = async (req: Request, res: Response) => {
     }
     user.client_message_count = clientMsgCount;
     user.client_last_msg_time = msgTime;
+    user.client_last_msg = message;
     const updateCount = await userRepo.update(user.id, user);
     if (!updateCount) {
       return sendError(res, "Unable to update Message Count");
