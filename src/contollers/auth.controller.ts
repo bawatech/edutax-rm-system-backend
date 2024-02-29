@@ -81,6 +81,35 @@ export const signUp = async (req: Request, res: Response) => {
   }
 };
 
+export const resendSignupOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email || email?.trim() === "" || email?.length <= 0) {
+    return sendError(res, "Email is required");
+  }
+  try {
+    let enc_email = enc(email);
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false, verify_status: "PENDING" } });
+    if (!user) {
+      return sendError(res, "Invalid email/Already Verified");
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    sendEmailVerification(email, otp);
+
+    user.otp = otp;
+    const newOtp = await userRepository.update(user.id, user);
+
+    if (!newOtp) {
+      return sendError(res, "Unable to set Otp");
+    }
+
+    return sendSuccess(res, "Otp sent again Successfully", { email: email });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
 
 
 
@@ -292,6 +321,35 @@ export const forgotPassword = async (req: Request, res: Response) => {
       return sendError(res, "Wrong Email");
     }
 
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const resendForgotPassOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email || email?.trim() === "" || email?.length <= 0) {
+    return sendError(res, "Email is required");
+  }
+  try {
+    let enc_email = enc(email);
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "Invalid email/Already Verified");
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    sendForgetPasswordOtp(email, otp);
+
+    user.otp = otp;
+    const newOtp = await userRepository.update(user.id, user);
+
+    if (!newOtp) {
+      return sendError(res, "Unable to set Otp");
+    }
+
+    return sendSuccess(res, "Otp sent again Successfully", { email: email });
   } catch (e) {
     return handleCatch(res, e);
   }
