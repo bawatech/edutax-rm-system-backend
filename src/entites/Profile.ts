@@ -73,6 +73,9 @@ export class Profile {
     @Column({ nullable: true })
     mob_last_digits: number;
 
+    @Column({ nullable: true })
+    existing_client: string;
+
     @Column({ type: "timestamp", nullable: true })
     added_on: Date;
 

@@ -17,6 +17,7 @@ import { sendEmail } from '../utils/sendMail';
 import { v4 as uuidv4 } from 'uuid';
 import { sendSpouseInvitationMail } from '../services/EmailManager';
 import { dec, enc } from '../utils/commonFunctions';
+import { TaxfileStatus } from '../entites/TaxfileStatus';
 
 
 
@@ -40,7 +41,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 
 export const updateProfile = async (req: Request, res: Response) => {
-  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin, street_number } = req.body;
+  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin, street_number,existing_client } = req.body;
 
   // if(!marital_status){
   //   return sendError(res, "Marital Status is required");
@@ -73,6 +74,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     profile.sin = sin;
     profile.mobile_number = mobile_number;
     profile.user = user!;
+    profile.existing_client = existing_client;
     profile.updated_on = new Date();
     profile.updated_by = userId;
 
@@ -198,6 +200,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
           const document = new Documents();
           document.taxfile_id_fk = taxfileId;
           document.user_id_fk = userId;
+          document.user_type = "CLIENT";
           document.type_id_fk = typeId;
           document.added_on = new Date();
           document.added_by = userId;
@@ -343,7 +346,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
     }
 
     const file_status = taxfile.file_status;
-    if(file_status != "NEEDS_RESUBMISSION"){
+    if (file_status != "NEEDS_RESUBMISSION" && file_status != "NEW_REQUEST") {
       return sendError(res, "Updation not allowed.Please review your file status");
     }
 
@@ -383,7 +386,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
 
     //documents - start here
     const documentRepository = AppDataSource.getRepository(Documents);
-    const oldDocs = await documentRepository.find({ where: { taxfile_id_fk: id, user_id_fk: userId, is_deleted: false } });
+    const oldDocs = await documentRepository.find({ where: { taxfile_id_fk: id, user_id_fk: userId,user_type: "CLIENT", is_deleted: false } });
     if (oldDocs && Array.isArray(oldDocs)) {
       for (const oldDoc of oldDocs) {
         const existsInNewDocs = documents.some((doc: { id: any }) => doc.id == oldDoc.id);
@@ -422,6 +425,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
           const document = new Documents();
           document.taxfile_id_fk = id;
           document.user_id_fk = userId;
+          document.user_type = "CLIENT";
           document.type_id_fk = typeId;
           document.added_by = userId;
           document.added_on = new Date();
@@ -436,7 +440,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
         }
       }
     } else {
-      return sendError(res, "Wrong Format for New Files");
+      return sendError(res, "Wrong Array Format of Files");
     }
     //documents - end here
 
@@ -475,6 +479,20 @@ export const taxFileDetails = async (req: Request, res: Response) => {
       return sendError(res, "Taxfile Not Found");
     }
 
+
+    const file_status = taxfile.file_status;
+    const taxfileStatusRepo = AppDataSource.getRepository(TaxfileStatus);
+    const taxfileStatus = await taxfileStatusRepo.findOne({
+      where: { code: file_status }
+    });
+    const file_status_name = taxfileStatus?.name;
+
+    if (!taxfile) {
+      return sendError(res, "File Status Not Found");
+    }
+
+
+
     // const profile_id = taxfile.profile_id_fk;
     const profileRepo = AppDataSource.getRepository(Profile);
     const profile = await profileRepo.findOne({
@@ -502,12 +520,14 @@ export const taxFileDetails = async (req: Request, res: Response) => {
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
+    let taxfileMod = { ...taxfile, file_status_name: file_status_name, documents: documentsWithPath, profile: profile };
 
+    (taxfileMod as any).showSingleDocument = false;
     if (direct_deposit_cra == "YES") {
       if (document_direct_deposit_cra != null && document_direct_deposit_cra != "" && document_direct_deposit_cra != undefined) {
         let single_filepath = path.join(__dirname, '..', '..', 'storage', 'documents', taxfile.document_direct_deposit_cra);
         if (fs.existsSync(single_filepath)) {
+          (taxfileMod as any).showSingleDocument = true;
           taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
         }
       } else {
@@ -753,7 +773,8 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
     return sendError(res, "Please Provide Email");
   }
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
     const spouseRepo = AppDataSource.getRepository(User);
 
     const existingSpouse = await spouseRepo.findOne({ where: { email: enc_email, verify_status: "VERIFIED", id_status: "ACTIVE", is_deleted: false, id: Not(userId), spouse_invite_status: Not("LINKED") } });
@@ -768,10 +789,10 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
     };
 
     const spouse_id = existingSpouse.id;
-    const spouse_email = email;
+    const spouse_email = lowerCaseEmail;
 
     const token = geenrateToken();
-    sendSpouseInvitationMail(email, dec(existingUser?.email), token);
+    sendSpouseInvitationMail(lowerCaseEmail, dec(existingUser?.email), token);
 
     existingUser.spouse_invite_token = token;
     existingUser.spouse_email = enc(spouse_email);
@@ -780,7 +801,7 @@ export const sendSpouseInvitation = async (req: Request, res: Response) => {
 
     await userRepo.update(existingUser.id, existingUser);
 
-    
+
 
     return sendSuccess(res, "Invitation Sent successfully.", { spouse_email: spouse_email, invitation_status: "SENT" }, 201);
 

@@ -17,6 +17,12 @@ export class Documents {
     type_id_fk: number;
 
     @Column({ nullable: true })
+    executive_id_fk: number;
+
+    @Column({ default: 'CLIENT',type: 'enum', enum: ['CLIENT', 'EXECUTIVE'], nullable: true })
+    user_type: string;
+
+    @Column({ nullable: true })
     filename: string;
 
     @Column({ type: 'boolean', default: false })

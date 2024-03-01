@@ -16,13 +16,14 @@ export const signUp = async (req: Request, res: Response) => {
     return sendError(res, "Email and Password are required");
   }
   try {
+    const lowerCaseEmail = email.toLowerCase();
     const user = new User();
-    user.email = email;
+    user.email = lowerCaseEmail;
     user.password = password;
     user.added_on = new Date();
     await requestDataValidation(user);
 
-    let enc_email = enc(email);
+    let enc_email = enc(lowerCaseEmail);
     user.email = enc_email;
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -39,7 +40,7 @@ export const signUp = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sendEmailVerification(email, otp);
+    sendEmailVerification(lowerCaseEmail, otp);
 
     const token = geenrateToken();
     let userData = existingUser;
@@ -87,7 +88,8 @@ export const resendSignupOtp = async (req: Request, res: Response) => {
     return sendError(res, "Email is required");
   }
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false, verify_status: "PENDING" } });
     if (!user) {
@@ -95,7 +97,7 @@ export const resendSignupOtp = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sendEmailVerification(email, otp);
+    sendEmailVerification(lowerCaseEmail, otp);
 
     user.otp = otp;
     const newOtp = await userRepository.update(user.id, user);
@@ -104,7 +106,7 @@ export const resendSignupOtp = async (req: Request, res: Response) => {
       return sendError(res, "Unable to set Otp");
     }
 
-    return sendSuccess(res, "Otp sent again Successfully", { email: email });
+    return sendSuccess(res, "Otp sent again Successfully", { email: lowerCaseEmail });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -119,7 +121,8 @@ export const login = async (req: Request, res: Response) => {
     return sendError(res, "Email and Password are required");
   }
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE" } });
     if (!user) {
@@ -134,7 +137,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sendLoginVerification(email, otp);
+    sendLoginVerification(lowerCaseEmail, otp);
 
     user.otp = otp;
     const newOtp = await userRepository.update(user.id, user);
@@ -154,7 +157,7 @@ export const login = async (req: Request, res: Response) => {
     // const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
 
 
-    return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", { email: email });
+    return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", { email: lowerCaseEmail });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -166,7 +169,8 @@ export const resendLoginOtp = async (req: Request, res: Response) => {
     return sendError(res, "Email is required");
   }
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
     if (!user) {
@@ -174,7 +178,7 @@ export const resendLoginOtp = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sendLoginVerification(email, otp);
+    sendLoginVerification(lowerCaseEmail, otp);
 
     user.otp = otp;
     const newOtp = await userRepository.update(user.id, user);
@@ -183,7 +187,7 @@ export const resendLoginOtp = async (req: Request, res: Response) => {
       return sendError(res, "Unable to set Otp");
     }
 
-    return sendSuccess(res, "Otp sent again Successfully", { email: email });
+    return sendSuccess(res, "Otp sent again Successfully", { email: lowerCaseEmail });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -201,7 +205,8 @@ export const verifyLogin = async (req: Request, res: Response) => {
   }
 
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
 
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { otp: otp, email: enc_email, id_status: "ACTIVE", is_deleted: false } });
@@ -249,7 +254,8 @@ export const verifyEmail = async (req: Request, res: Response) => {
   }
 
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
 
     const userId = req?.userId;
     const userRepository = AppDataSource.getRepository(User);
@@ -307,12 +313,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
     return sendError(res, "Email is required");
   }
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
     if (user) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      sendForgetPasswordOtp(email, otp);
+      sendForgetPasswordOtp(lowerCaseEmail, otp);
       user.otp = otp;
       await userRepository.update(user.id, user);
 
@@ -332,7 +339,8 @@ export const resendForgotPassOtp = async (req: Request, res: Response) => {
     return sendError(res, "Email is required");
   }
   try {
-    let enc_email = enc(email);
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
     if (!user) {
@@ -340,7 +348,7 @@ export const resendForgotPassOtp = async (req: Request, res: Response) => {
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sendForgetPasswordOtp(email, otp);
+    sendForgetPasswordOtp(lowerCaseEmail, otp);
 
     user.otp = otp;
     const newOtp = await userRepository.update(user.id, user);
@@ -349,7 +357,7 @@ export const resendForgotPassOtp = async (req: Request, res: Response) => {
       return sendError(res, "Unable to set Otp");
     }
 
-    return sendSuccess(res, "Otp sent again Successfully", { email: email });
+    return sendSuccess(res, "Otp sent again Successfully", { email: lowerCaseEmail });
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -374,7 +382,9 @@ export const newPassword = async (req: Request, res: Response) => {
     if (!/[#@!$%&]/.test(newPassword)) {
       return sendError(res, "Password must be between 8 and 20 characters long, and contain at least one numeric value and one symbol from #,@,!,$,%,&");
     }
-    let enc_email = enc(email);
+
+    const lowerCaseEmail = email.toLowerCase();
+    let enc_email = enc(lowerCaseEmail);
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({ where: { email: enc_email, otp: otp, id_status: "ACTIVE" } });
     if (user) {

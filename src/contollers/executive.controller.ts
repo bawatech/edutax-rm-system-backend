@@ -20,6 +20,7 @@ import fs from "fs";
 import path from "path";
 import { dec } from '../utils/commonFunctions';
 import { User } from '../entites/User';
+import { DocumentTypes } from '../entites/DocumentTypes';
 
 
 export const login = async (req: Request, res: Response) => {
@@ -28,8 +29,9 @@ export const login = async (req: Request, res: Response) => {
     return sendError(res, "Email and Password are required");
   }
   try {
+    const lowerCaseEmail = email.toLowerCase();
     const executiveRepository = AppDataSource.getRepository(Executive);
-    const executive = await executiveRepository.findOne({ where: { email } });
+    const executive = await executiveRepository.findOne({ where: { email: lowerCaseEmail } });
     if (!executive) {
       return res.status(400).json({ message: 'Invalid email' });
     }
@@ -211,6 +213,7 @@ export const getExecutiveMsg = async (req: Request, res: Response) => {
       }
     });
 
+
     const updateCount = await userRepo.update(user.id, { client_message_count: 0 });
     if (!updateCount) {
       return sendError(res, "Unable to Reset Message Count");
@@ -378,21 +381,37 @@ export const userMsgListCount = async (req: Request, res: Response) => {
   const { unread } = req?.query;
   try {
     if (!unread || unread != "true") {
-      const messageRepository = AppDataSource.getRepository(Messages);
-      const messages = await messageRepository.query(
-        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM messages msg LEFT JOIN user us ON msg.reply_to_id_fk = us.id LEFT JOIN profile prof ON us.id = prof.user_id WHERE msg.user_type = 'CLIENT' AND us.id_status = 'ACTIVE' AND us.is_deleted = 'false' GROUP BY msg.reply_to_id_fk`,
+      // const messageRepository = AppDataSource.getRepository(Messages);
+      // const messages = await messageRepository.query(
+      //   `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM messages msg LEFT JOIN user us ON msg.reply_to_id_fk = us.id LEFT JOIN profile prof ON us.id = prof.user_id WHERE msg.user_type = 'CLIENT' AND us.id_status = 'ACTIVE' AND us.is_deleted = 'false' GROUP BY msg.reply_to_id_fk`,
+      // );       
+
+      // this query is also necessary but commented for the time if needed in future
+
+      // const msgDecoded = messages.map((msg: any) => {
+      //   const decodedEmail = dec(msg.user_email);
+      //   return { ...msg, user_email: decodedEmail };
+      // });
+      // if (!messages) {
+      //   return sendError(res, "Unable to fetch Records");
+      // }
+      // return sendSuccess(res, "Messages Fetched Successfully", { list: msgDecoded }, 200);
+
+
+      const userRepo = AppDataSource.getRepository(User);
+      const user = await userRepo.query(
+        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false'`,
       );
 
-      const msgDecoded = messages.map((msg: any) => {
-        const decodedEmail = dec(msg.user_email);
-        return { ...msg, user_email: decodedEmail };
+      const usDecoded = user.map((us: any) => {
+        const decodedEmail = dec(us.user_email);
+        return { ...us, user_email: decodedEmail };
       });
 
-      if (!messages) {
+      if (!user) {
         return sendError(res, "Unable to fetch Records");
       }
-
-      return sendSuccess(res, "Messages Fetched Successfully", { list: msgDecoded }, 200);
+      return sendSuccess(res, "Success", { list: usDecoded }, 200);
 
     } else if (unread == "true" || unread == true) {
 
@@ -413,7 +432,6 @@ export const userMsgListCount = async (req: Request, res: Response) => {
         const decodedEmail = dec(us.user_email);
         return { ...us, user_email: decodedEmail };
       });
-
 
       if (!user) {
         return sendError(res, "Unable to fetch Records");
@@ -462,6 +480,19 @@ export const taxfileDetail = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Taxfile not found' });
     }
 
+
+    const file_status = taxfile.file_status;
+    const taxfileStatusRepo = AppDataSource.getRepository(TaxfileStatus);
+    const taxfileStatus = await taxfileStatusRepo.findOne({
+      where: { code: file_status }
+    });
+    const file_status_name = taxfileStatus?.name;
+
+    if (!taxfile) {
+      return sendError(res, "File Status Not Found");
+    }
+
+
     const user_id = taxfile.user_id;
     const profileRepo = AppDataSource.getRepository(Profile);
     const profile = await profileRepo.findOne({
@@ -489,12 +520,14 @@ export const taxfileDetail = async (req: Request, res: Response) => {
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    let taxfileMod = { ...taxfile, documents: documentsWithPath, profile: profile };
+    let taxfileMod = { ...taxfile, file_status_name: file_status_name, documents: documentsWithPath, profile: profile };
 
+    (taxfileMod as any).showSingleDocument = false;
     if (direct_deposit_cra == "YES") {
       if (document_direct_deposit_cra != null && document_direct_deposit_cra != "" && document_direct_deposit_cra != undefined) {
         let single_filepath = path.join(__dirname, '..', '..', 'storage', 'documents', taxfile.document_direct_deposit_cra);
         if (fs.existsSync(single_filepath)) {
+          (taxfileMod as any).showSingleDocument = true;
           taxfileMod.document_direct_deposit_cra = `${base_url}/storage/documents/${taxfile.document_direct_deposit_cra}`;
         }
       } else {
@@ -523,13 +556,15 @@ export const forgotPassword = async (req: Request, res: Response) => {
     return sendError(res, "Email is required");
   }
   try {
+    const lowerCaseEmail = email.toLowerCase();
+
     const execRepo = AppDataSource.getRepository(Executive);
-    const exec = await execRepo.findOne({ where: { email: email, id_status: "ACTIVE" } });
+    const exec = await execRepo.findOne({ where: { email: lowerCaseEmail, id_status: "ACTIVE" } });
     if (exec) {
       const subject = "Edutax: Forgot Pasword";
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const message = "<h1>Please use the Given OTP for New Password</h1><br><br>OTP: " + otp;
-      sendEmail(email, subject, message);
+      sendEmail(lowerCaseEmail, subject, message);
       exec.otp = otp;
       await execRepo.update(exec.id, exec);
 
@@ -553,8 +588,10 @@ export const newPassword = async (req: Request, res: Response) => {
     return sendError(res, "Otp is required");
   }
   try {
+    const lowerCaseEmail = email.toLowerCase();
+
     const execRepo = AppDataSource.getRepository(Executive);
-    const exec = await execRepo.findOne({ where: { email: email, otp: otp, id_status: "ACTIVE" } });
+    const exec = await execRepo.findOne({ where: { email: lowerCaseEmail, otp: otp, id_status: "ACTIVE" } });
     if (exec) {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       exec.password = hashedPassword;
@@ -623,9 +660,11 @@ export const addExecutive = async (req: Request, res: Response) => {
   }
   const adminId = req?.execId;
   try {
+    const lowerCaseEmail = email.toLowerCase();
+
     const executive = new Executive();
     executive.name = name;
-    executive.email = email;
+    executive.email = lowerCaseEmail;
     executive.password = password;
     executive.user_type = "EXECUTIVE";
     executive.added_on = new Date();
@@ -738,6 +777,138 @@ export const templatesList = async (req: Request, res: Response) => {
 
 
 
+export const updateTaxfileExecutive = async (req: Request, res: Response) => {
+  const { documents, id } = req.body;
+
+  const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
+
+  if (!id) {
+    unlinkMultiFiles(files);
+    return sendError(res, "Taxfile Id is Required");
+  }
+
+  try {
+    const execId = req?.execId;
+
+    const taxfileRepo = AppDataSource.getRepository(Taxfile);
+    const taxfile = await taxfileRepo.findOne({ where: { id: id } });
+    if (!taxfile) {
+      return sendError(res, "Taxfile Not Found");
+    }
+
+    const user_id = taxfile.user_id;
+
+    await requestDataValidation(taxfile);
+
+    // let is_old_documents_blank = false;
+    // if (documents.some((doc: { id: number }) => !doc.id)) {
+    //   is_old_documents_blank = true;
+    // }
+
+    // if ((!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) && is_old_documents_blank == true) {
+    //   return sendError(res, "Files are Required");
+    // }
+
+    // const savedTaxfile = await taxfileRepo.update(taxfile.id, taxfile);
+
+    // if (!savedTaxfile) {
+    //   unlinkMultiFiles(files);
+    //   return sendError(res, "Taxfile Not Updated");
+    // }
+
+    //documents - start here
+    const documentRepository = AppDataSource.getRepository(Documents);
+    const oldDocs = await documentRepository.find({ where: { taxfile_id_fk: id, executive_id_fk: execId, is_deleted: false, user_type: "EXECUTIVE", user_id_fk: user_id } });
+    if (oldDocs && Array.isArray(oldDocs)) {
+      for (const oldDoc of oldDocs) {
+        const existsInNewDocs = documents.some((doc: { id: any }) => doc.id == oldDoc.id);
+        if (!existsInNewDocs) {
+          oldDoc.is_deleted = true;
+          const oldDoc_name = oldDoc.filename;
+          const updateOldDoc = await documentRepository.update(oldDoc.id, oldDoc);
+          if (!updateOldDoc) {
+            unlinkMultiFiles(files);
+            return sendError(res, "Unable to delete Old file");
+          }
+          // let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', oldDoc_name);
+          // if (fs.existsSync(filepath)) {
+          //   fs.unlinkSync(filepath);
+          // }
+        }
+      }
+    } else {
+      return sendError(res, "Unable to fetch old files");
+    }
+
+    if (documents && Array.isArray(documents) && files && Array.isArray(files)) {
+      for (let i = 0; i < files.length; i++) {
+        if (documents[i]['typeid'] && documents[i]['typeid'] !== null && documents[i]['typeid'] !== undefined && documents[i]['typeid'] !== "") {
+          const file = files[i];
+          const typeId = documents[i]['typeid'];
+          // const documentTypeRepo = AppDataSource.getRepository(DocumentTypes);
+          // const documentType = await documentTypeRepo.findOne({ where: { id: typeId } });
+          // if (!documentType) {
+          //   unlinkMultiFiles(files);
+          //   unlinkSingleFile(singleFile?.filename);
+          //   return sendError(res, "Invalid Document Type Id");
+          // }
+
+          const document = new Documents();
+          document.taxfile_id_fk = id;
+          document.user_id_fk = user_id;
+          document.executive_id_fk = execId;
+          document.user_type = "EXECUTIVE";
+          document.type_id_fk = typeId;
+          document.added_by = execId;
+          document.added_on = new Date();
+          let file_name = file.filename;
+          document.filename = file_name;
+          const saveDocument = await documentRepository.save(document);
+          if (!saveDocument) {
+            unlinkMultiFiles(files);
+            return sendError(res, "Files Not Saved");
+          }
+        }
+      }
+    } else {
+      return sendError(res, "Wrong Array Format of Files");
+    }
+    //documents - end here
+
+    return sendSuccess(res, 'Success', { taxfile });
+  } catch (e) {
+    unlinkMultiFiles(files);
+    return handleCatch(res, e);
+  }
+};
+
+
+
+
+
+const unlinkMultiFiles = (files: Express.Multer.File[] = []) => {
+  for (const file of files as { filename: string }[]) {
+    let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
+  }
+}
+
+const unlinkSingleFile = (filename: any = null) => {
+  if (filename != null) {
+    let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', filename);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+    }
+  }
+}
+
+
+
 const geenrateToken = () => {
   return uuidv4();
 }
+
+
+
