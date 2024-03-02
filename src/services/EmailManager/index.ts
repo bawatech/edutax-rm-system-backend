@@ -9,18 +9,24 @@ export const sendLoginVerification = async (to: string, otp: string) => {
   <br>\n
   <br>\n
   
-  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
-  <br>\n
-  <br>\n
-  If you have any questions, please do not hesitate to contact us.
-  <br>\n
-  <br>\n
-  Sincerely,
-  <br>\n
-  <h3>The Edutax Team</h3>`
+  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>`
   const send = await sendEmail(to, subject, message)
   return send
 }
+
+export const sendEmailNotifyClientNewMessages = async (to: string) => {
+
+  const subject = "Edutax: New Message";
+  const message = `Dear Sir/Mam,
+    <br>\n
+    <br>\n
+    You received new messages. To check this, Please visit your account.
+    <br>\n
+    <br>\n`
+  const send = await sendEmail(to, subject, message)
+  return send
+}
+
 
 export const sendEmailVerification = async (to: string, otp: string) => {
 
@@ -31,20 +37,9 @@ export const sendEmailVerification = async (to: string, otp: string) => {
     Thank you for signing up for our services. To verify your email address, please enter the following one-time password (OTP) in the app:<br>\n
     <br>\n
     <br>\n
-    
-    <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
-    <br>\n
-    <br>\n
-    If you have any questions, please do not hesitate to contact us.
-    <br>\n
-    <br>\n
-    Sincerely,
-    <br>\n
-    <h3>The Edutax Team</h3>`
+    <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>`
   const send = await sendEmail(to, subject, message)
   return send
-
-
 }
 
 
@@ -57,15 +52,7 @@ export const sendForgetPasswordOtp = async (to: string, otp: string) => {
   <br>\n
   <br>\n
   
-  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>
-  <br>\n
-  <br>\n
-  If you have any questions, please do not hesitate to contact us.
-  <br>\n
-  <br>\n
-  Sincerely,
-  <br>\n
-  <h3>The Edutax Team</h3>`
+  <h2 style="width:100%;text-align:center;"> <span style="padding:10px;background:#f2f2f2">${otp}</span></h2>`
   const send = await sendEmail(to, subject, message)
   return send
 }
@@ -80,15 +67,7 @@ export const sendSpouseInvitationMail = async (to: string, from: string, token: 
   You got a spouse linking invitation from ${from}. Click the link given below accept the invitation.<br>\n
   <br>\n
   <br>\n
-  <a href="${process.env.FRONT_BASE_URL}/accept-invitation/${token}" target="_blank" style="font-size: 16px; font-weight: bold; background-color: #6699FF; text-decoration: none; display: inline-block; padding: 12px 24px; border-radius: 25px;">Click Here To Accept Invitation</a>
-  <br>\n
-  <br>\n
-  If you have any questions, please do not hesitate to contact us.
-  <br>\n
-  <br>\n
-  Sincerely,
-  <br>\n
-  <h3>The Edutax Team</h3>`
+  <a href="${process.env.FRONT_BASE_URL}/accept-invitation/${token}" target="_blank" style="font-size: 16px; font-weight: bold; background-color: #6699FF; text-decoration: none; display: inline-block; padding: 12px 24px; border-radius: 25px;">Click Here To Accept Invitation</a>`
   const send = await sendEmail(to, subject, message)
   return send
 }
@@ -138,7 +117,16 @@ export const sendEmail = async (to: string, subject: string, message: string) =>
     
     
         <div style="padding: 5em 0;padding:40px;">`;
-  const footer = `</div>
+  const footer = `
+  <br>\n
+  <br>\n
+  If you have any questions, please do not hesitate to contact us.
+  <br>\n
+  <br>\n
+  Sincerely,
+  <br>\n
+  <h3>The Edutax Team</h3>
+  </div>
 
 
     <div style="

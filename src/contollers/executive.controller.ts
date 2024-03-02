@@ -21,6 +21,7 @@ import path from "path";
 import { dec } from '../utils/commonFunctions';
 import { User } from '../entites/User';
 import { DocumentTypes } from '../entites/DocumentTypes';
+import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp } from '../services/EmailManager';
 
 
 export const login = async (req: Request, res: Response) => {
@@ -145,7 +146,7 @@ export const getTaxfileStatus = async (req: Request, res: Response) => {
 
 
 export const addExecutiveMsg = async (req: Request, res: Response) => {
-  const { message, user_id, category } = req.body;
+  const { message, user_id, category, notify_client } = req.body;
   if (!user_id) {
     return sendError(res, "Please provide Id of user")
   }
@@ -182,6 +183,8 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
     await requestDataValidation(msgTab);
 
     await msgRepo.save(msgTab);
+
+    sendEmailNotifyClientNewMessages("edutest@yopmail.com");
     return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
 
   } catch (e) {
@@ -561,10 +564,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const execRepo = AppDataSource.getRepository(Executive);
     const exec = await execRepo.findOne({ where: { email: lowerCaseEmail, id_status: "ACTIVE" } });
     if (exec) {
-      const subject = "Edutax: Forgot Pasword";
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const message = "<h1>Please use the Given OTP for New Password</h1><br><br>OTP: " + otp;
-      sendEmail(lowerCaseEmail, subject, message);
+      sendForgetPasswordOtp(lowerCaseEmail,otp);
       exec.otp = otp;
       await execRepo.update(exec.id, exec);
 
