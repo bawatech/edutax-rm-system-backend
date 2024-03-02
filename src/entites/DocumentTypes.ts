@@ -12,6 +12,9 @@ export class DocumentTypes {
     @Column()
     name: string;
 
+    @Column({ default: 'CLIENT',type: 'enum', enum: ['CLIENT', 'EXECUTIVE'], nullable: true })
+    user_type: string;
+
     @OneToMany(() => Documents, (document) => document.type)
     documents: Documents[]
 

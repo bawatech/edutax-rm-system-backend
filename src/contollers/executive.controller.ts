@@ -161,6 +161,8 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
       return sendError(res, "User Not Exists");
     }
 
+    const user_email_decoded = dec(user.email);
+
     const templateRepo = AppDataSource.getRepository(Templates);
     const template = await templateRepo.findOne({ where: { code: category, is_deleted: false, id_status: "ACTIVE" } });
     const is_fixed = template?.is_fixed;
@@ -177,6 +179,7 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
     }
     msgTab.user_type = "EXECUTIVE";
     msgTab.executive_id_fk = execId;
+    msgTab.notify_client = true;
     msgTab.added_by = execId;
     msgTab.added_on = new Date();
 
@@ -184,7 +187,7 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
 
     await msgRepo.save(msgTab);
 
-    sendEmailNotifyClientNewMessages("edutest@yopmail.com");
+    sendEmailNotifyClientNewMessages(user_email_decoded);
     return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
 
   } catch (e) {
@@ -782,6 +785,48 @@ export const updateTaxfileExecutive = async (req: Request, res: Response) => {
   const { documents, id } = req.body;
 
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
+
+
+  if (documents && Array.isArray(documents) && documents?.length >= 0) {
+    for (let i = 0; i < documents?.length; i++) {
+      let file = '';
+      if (files[i] && files[i]['filename']) {
+        file = files[i]['filename'];
+      }
+      let typeid = 0;
+      if (documents[i] && documents[i]['typeid']) {
+        typeid = parseInt(documents[i]['typeid']) || 0;
+      }
+
+      if (typeid != 0 && file?.length <= 0) {
+        unlinkMultiFiles(files);
+        return sendError(res, "File is required for given Type");
+      }
+    }
+  } else {
+    unlinkMultiFiles(files);
+    return sendError(res, "Files and its Types are required");
+  }
+
+  if (files && Array.isArray(files) && files?.length > 0) {
+    for (let i = 0; i < files?.length; i++) {
+      let file = '';
+      if (files[i] && files[i]['filename']) {
+        file = files[i]['filename'];
+      }
+      let typeid = 0;
+      if (documents[i] && documents[i]['typeid']) {
+        typeid = parseInt(documents[i]['typeid']) || 0;
+      }
+
+      if (typeid == 0 && file?.length > 0) {
+        unlinkMultiFiles(files);
+        return sendError(res, "Document type is required");
+      }
+    }
+  }
+
+
 
   if (!id) {
     unlinkMultiFiles(files);

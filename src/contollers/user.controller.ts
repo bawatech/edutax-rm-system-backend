@@ -41,7 +41,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 
 export const updateProfile = async (req: Request, res: Response) => {
-  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin, street_number,existing_client } = req.body;
+  const { firstname, lastname, date_of_birth, marital_status, street_name, city, province, postal_code, mobile_number, sin, street_number, existing_client } = req.body;
 
   // if(!marital_status){
   //   return sendError(res, "Marital Status is required");
@@ -124,6 +124,49 @@ export const addTaxfile = async (req: Request, res: Response) => {
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
   const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
+
+  if (documents && Array.isArray(documents) && documents?.length >= 0) {
+    for (let i = 0; i < documents?.length; i++) {
+      let file = '';
+      if (files[i] && files[i]['filename']) {
+        file = files[i]['filename'];
+      }
+      let typeid = 0;
+      if (documents[i] && documents[i]['typeid']) {
+        typeid = parseInt(documents[i]['typeid']) || 0;
+      }
+
+      if (typeid != 0 && file?.length <= 0) {
+        unlinkSingleFile(singleFile?.filename);
+        unlinkMultiFiles(files);
+        return sendError(res, "File is required for given Type");
+      }
+    }
+  } else {
+    unlinkSingleFile(singleFile?.filename);
+    unlinkMultiFiles(files);
+    return sendError(res, "Files and its Types are required");
+  }
+
+  if (files && Array.isArray(files) && files?.length > 0) {
+    for (let i = 0; i < files?.length; i++) {
+      let file = '';
+      if (files[i] && files[i]['filename']) {
+        file = files[i]['filename'];
+      }
+      let typeid = 0;
+      if (documents[i] && documents[i]['typeid']) {
+        typeid = parseInt(documents[i]['typeid']) || 0;
+      }
+
+      if (typeid == 0 && file?.length > 0) {
+        unlinkSingleFile(singleFile?.filename);
+        unlinkMultiFiles(files);
+        return sendError(res, "Document type is required");
+      }
+    }
+  }
+
 
   try {
     const userId = req?.userId;
@@ -330,6 +373,51 @@ export const updateTaxfile = async (req: Request, res: Response) => {
 
   const singleFile = req.files ? (req.files as Express.Multer.File[]).find(file => file.fieldname === 'document_direct_deposit_cra') : undefined;
 
+
+
+  if (documents && Array.isArray(documents) && documents?.length >= 0) {
+    for (let i = 0; i < documents?.length; i++) {
+      let file = '';
+      if (files[i] && files[i]['filename']) {
+        file = files[i]['filename'];
+      }
+      let typeid = 0;
+      if (documents[i] && documents[i]['typeid']) {
+        typeid = parseInt(documents[i]['typeid']) || 0;
+      }
+
+      if (typeid != 0 && file?.length <= 0) {
+        unlinkSingleFile(singleFile?.filename);
+        unlinkMultiFiles(files);
+        return sendError(res, "File is required for given Type");
+      }
+    }
+  } else {
+    unlinkSingleFile(singleFile?.filename);
+    unlinkMultiFiles(files);
+    return sendError(res, "Files and its Types are required");
+  }
+
+  if (files && Array.isArray(files) && files?.length > 0) {
+    for (let i = 0; i < files?.length; i++) {
+      let file = '';
+      if (files[i] && files[i]['filename']) {
+        file = files[i]['filename'];
+      }
+      let typeid = 0;
+      if (documents[i] && documents[i]['typeid']) {
+        typeid = parseInt(documents[i]['typeid']) || 0;
+      }
+
+      if (typeid == 0 && file?.length > 0) {
+        unlinkSingleFile(singleFile?.filename);
+        unlinkMultiFiles(files);
+        return sendError(res, "Document type is required");
+      }
+    }
+  }
+
+
   if (!id) {
     unlinkMultiFiles(files);
     unlinkSingleFile(singleFile?.filename);
@@ -386,7 +474,7 @@ export const updateTaxfile = async (req: Request, res: Response) => {
 
     //documents - start here
     const documentRepository = AppDataSource.getRepository(Documents);
-    const oldDocs = await documentRepository.find({ where: { taxfile_id_fk: id, user_id_fk: userId,user_type: "CLIENT", is_deleted: false } });
+    const oldDocs = await documentRepository.find({ where: { taxfile_id_fk: id, user_id_fk: userId, user_type: "CLIENT", is_deleted: false } });
     if (oldDocs && Array.isArray(oldDocs)) {
       for (const oldDoc of oldDocs) {
         const existsInNewDocs = documents.some((doc: { id: any }) => doc.id == oldDoc.id);
@@ -754,9 +842,16 @@ export const getProvinces = async (req: Request, res: Response) => {
 };
 
 export const getDocumentTypes = async (req: Request, res: Response) => {
+  const { type } = req?.query;
   try {
     const documentTypesRepo = AppDataSource.getRepository(DocumentTypes);
-    const documentTypesList = await documentTypesRepo.find();
+    let documentTypesList: any = [];
+    if (type == "executive") {
+      documentTypesList = await documentTypesRepo.find({ where: { user_type: "EXECUTIVE" } });
+    } else {
+      documentTypesList = await documentTypesRepo.find({ where: { user_type: "CLIENT" } });
+    }
+
 
     return sendSuccess(res, "Document Types Fetched Successfully", { documentTypesList }, 200);
   } catch (e) {

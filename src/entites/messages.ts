@@ -30,6 +30,9 @@ export class Messages {
     @Column({ nullable: true })
     reply_to_id_fk: number;
 
+    @Column({ type: 'boolean', default: false })
+    notify_client: boolean;
+
 
     @Column({ type: "timestamp", nullable: true })
     added_on: Date;
