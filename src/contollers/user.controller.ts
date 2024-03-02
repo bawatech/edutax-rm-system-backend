@@ -367,7 +367,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
 
 
 export const updateTaxfile = async (req: Request, res: Response) => {
-  const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra, id } = req.body;
+  const { tax_year, documents, taxfile_province, moved_to_canada, date_of_entry, direct_deposit_cra, document_direct_deposit_cra, id, is_deleted_deposit_cra_doc, } = req.body;
 
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
@@ -438,6 +438,8 @@ export const updateTaxfile = async (req: Request, res: Response) => {
       return sendError(res, "Updation not allowed.Please review your file status");
     }
 
+    const singlefile_old_name = taxfile.document_direct_deposit_cra;
+
     taxfile.tax_year = tax_year;
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
@@ -445,9 +447,23 @@ export const updateTaxfile = async (req: Request, res: Response) => {
       taxfile.date_of_entry = date_of_entry;
     }
     taxfile.direct_deposit_cra = direct_deposit_cra;
+    // if (direct_deposit_cra == "YES") {
+    //   taxfile.document_direct_deposit_cra = singleFile?.filename ?? '';
+    // } else {
+    //   unlinkSingleFile(singleFile?.filename);
+    // }
     if (direct_deposit_cra == "YES") {
-      taxfile.document_direct_deposit_cra = singleFile?.filename ?? '';
+
+      if (singleFile && singleFile.filename && singleFile.filename.length > 0 && singleFile.size > 0) {
+        taxfile.document_direct_deposit_cra = singleFile?.filename ?? '';
+      } else if (is_deleted_deposit_cra_doc == 'true') {
+        taxfile.document_direct_deposit_cra = '';
+        unlinkSingleFile(singlefile_old_name);
+      }
+
     } else {
+      taxfile.document_direct_deposit_cra = '';
+      unlinkSingleFile(singlefile_old_name);
       unlinkSingleFile(singleFile?.filename);
     }
     taxfile.updated_by = userId;
@@ -455,10 +471,10 @@ export const updateTaxfile = async (req: Request, res: Response) => {
 
     await requestDataValidation(taxfile);
 
-    let is_old_documents_blank = false;
-    if (documents.some((doc: { id: number }) => !doc.id)) {
-      is_old_documents_blank = true;
-    }
+    // let is_old_documents_blank = false;
+    // if (documents.some((doc: { id: number }) => !doc.id)) {
+    //   is_old_documents_blank = true;
+    // }
 
     // if ((!files || !documents || files.length !== documents.length || files.length === 0 || documents.length === 0) && is_old_documents_blank == true) {
     //   return sendError(res, "Files are Required");

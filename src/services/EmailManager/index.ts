@@ -73,6 +73,21 @@ export const sendSpouseInvitationMail = async (to: string, from: string, token: 
 }
 
 
+export const sendUploadedDocumentNotify = async (to: string) => {
+
+  const subject = "Edutax: New Documents Uploaded";
+  const message = `Dear Sir/Mam,
+    <br>\n
+    <br>\n
+    New Documents are uploaded in your return. To check this, Please visit your account.
+    <br>\n
+    <br>\n`
+  const send = await sendEmail(to, subject, message)
+  return send
+}
+
+
+
 
 // Create a transporter object using SMTP or other transport methods
 const transporter = nodemailer.createTransport({

@@ -29,13 +29,16 @@ const storage = multer.diskStorage({
     if (!allowedExtensions.includes(extension)) {
       return cb(null, JSON.stringify({ error: 'Invalid file type. Only JPG, JPEG, PNG, and PDF files are allowed.' }));
     }
-    const currentDate = new Date().toISOString().slice(0, 10);
+    const fullDate = new Date().toISOString();
+    const currentDate = fullDate.slice(0, 10);
+    const time = fullDate.split('T')[1].split('.')[0];
+    let modifyTime = time.replace(/:/g, '-');
     let randomString = '';
     while (randomString.length < 20) {
       randomString += Math.random().toString(36).substring(2);
     }
     randomString = randomString.substring(0, 20);
-    const finalFileName = `${currentDate}-${randomString}.${extension}`;
+    const finalFileName = `${currentDate}-${randomString}-${modifyTime}.${extension}`;
     cb(null, finalFileName);
   }
 });

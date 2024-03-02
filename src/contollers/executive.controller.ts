@@ -21,7 +21,7 @@ import path from "path";
 import { dec } from '../utils/commonFunctions';
 import { User } from '../entites/User';
 import { DocumentTypes } from '../entites/DocumentTypes';
-import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp } from '../services/EmailManager';
+import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp, sendUploadedDocumentNotify } from '../services/EmailManager';
 
 
 export const login = async (req: Request, res: Response) => {
@@ -406,7 +406,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
 
       const userRepo = AppDataSource.getRepository(User);
       const user = await userRepo.query(
-        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false'`,
+        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false' ORDER BY us.client_last_msg_time DESC`,
       );
 
       const usDecoded = user.map((us: any) => {
@@ -432,7 +432,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       //   }
       // });
       const user = await userRepo.query(
-        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false' AND client_message_count > 0`,
+        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false' AND client_message_count > 0 ORDER BY us.client_last_msg_time DESC`,
       );
       const usDecoded = user.map((us: any) => {
         const decodedEmail = dec(us.user_email);
@@ -568,7 +568,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const exec = await execRepo.findOne({ where: { email: lowerCaseEmail, id_status: "ACTIVE" } });
     if (exec) {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      sendForgetPasswordOtp(lowerCaseEmail,otp);
+      sendForgetPasswordOtp(lowerCaseEmail, otp);
       exec.otp = otp;
       await execRepo.update(exec.id, exec);
 
@@ -782,7 +782,7 @@ export const templatesList = async (req: Request, res: Response) => {
 
 
 export const updateTaxfileExecutive = async (req: Request, res: Response) => {
-  const { documents, id } = req.body;
+  const { documents, id, notify_client } = req.body;
 
   const files: Express.Multer.File[] = req.files ? (req.files as Express.Multer.File[]).filter(file => file.fieldname.startsWith('documents')) : [];
 
@@ -843,6 +843,14 @@ export const updateTaxfileExecutive = async (req: Request, res: Response) => {
     }
 
     const user_id = taxfile.user_id;
+
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({ where: { id: user_id, id_status: "ACTIVE", is_deleted: false } });
+    if (!user) {
+      return sendError(res, "User of this Taxfile Not Exists ");
+    }
+
+    const user_email_decoded = dec(user.email);
 
     await requestDataValidation(taxfile);
 
@@ -920,6 +928,11 @@ export const updateTaxfileExecutive = async (req: Request, res: Response) => {
       return sendError(res, "Wrong Array Format of Files");
     }
     //documents - end here
+
+    if (notify_client == 'true') {
+      sendUploadedDocumentNotify(user_email_decoded);
+    }
+
 
     return sendSuccess(res, 'Success', { taxfile });
   } catch (e) {
