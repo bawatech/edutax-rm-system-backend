@@ -929,7 +929,7 @@ export const updateTaxfileExecutive = async (req: Request, res: Response) => {
     }
     //documents - end here
 
-    if (notify_client == 'true') {
+    if (notify_client) {
       sendUploadedDocumentNotify(user_email_decoded);
     }
 

@@ -75,7 +75,7 @@ export const sendSpouseInvitationMail = async (to: string, from: string, token: 
 
 export const sendUploadedDocumentNotify = async (to: string) => {
 
-  const subject = "Edutax: New Documents Uploaded";
+  const subject = "Edutax: New Documents Sent";
   const message = `Dear Sir/Mam,
     <br>\n
     <br>\n
