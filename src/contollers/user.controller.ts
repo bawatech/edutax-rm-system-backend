@@ -842,9 +842,16 @@ export const getProvinces = async (req: Request, res: Response) => {
 };
 
 export const getDocumentTypes = async (req: Request, res: Response) => {
+  const { type } = req?.query;
   try {
     const documentTypesRepo = AppDataSource.getRepository(DocumentTypes);
-    const documentTypesList = await documentTypesRepo.find();
+    let documentTypesList: any = [];
+    if (type == "executive") {
+      documentTypesList = await documentTypesRepo.find({ where: { user_type: "EXECUTIVE" } });
+    } else {
+      documentTypesList = await documentTypesRepo.find({ where: { user_type: "CLIENT" } });
+    }
+
 
     return sendSuccess(res, "Document Types Fetched Successfully", { documentTypesList }, 200);
   } catch (e) {
