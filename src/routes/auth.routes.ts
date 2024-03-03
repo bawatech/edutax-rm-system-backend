@@ -1,8 +1,34 @@
 import { Router } from "express";
-import { login, signUp } from "../contollers/auth.controller";
+import { login, signUp, verifyEmail, forgotPassword, newPassword, updatePassword, logout, verifyLogin, resendLoginOtp, resendSignupOtp, resendForgotPassOtp } from "../contollers/auth.controller";
+import { clientAuth } from "../middlewares/clientAuth";
+import { validateForgotPass, validateLogin, validateNewPass, validateSignup, validateUpdatePass, validateVerifyEmail, validateVerifyLogin } from "../utils/validate";
+
+
 const router = Router();
 
-router.route("/sign-up").post(signUp);
-router.route("/login").post(login);
+
+
+router.post("/sign-up", validateSignup, signUp);
+router.post("/resend-signup-otp", resendSignupOtp);
+router.post("/verify-email", validateVerifyEmail, verifyEmail);
+
+
+
+router.post("/login", validateLogin, login);
+router.post("/resend-login-otp", resendLoginOtp);
+router.post("/verify-login", validateVerifyLogin, verifyLogin);
+
+
+
+router.post("/forgot-password", validateForgotPass, forgotPassword);
+router.post("/resend-forgot-pass-otp", resendForgotPassOtp);
+router.post("/new-password", validateNewPass, newPassword);
+
+
+router.put("/update-password", validateUpdatePass, clientAuth, updatePassword);
+
+
+router.post("/logout", logout);
+
 
 export default router

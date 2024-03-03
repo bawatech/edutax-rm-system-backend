@@ -1,42 +1,30 @@
 import "reflect-metadata"
 import express from 'express'
-import { Request,Response } from 'express';
-import { User } from "./entites/User";
 import { AppDataSource } from "./AppDataSource";
-import { createUser } from "./contollers/user.controller";
 const app = express();
-import userRoutes from './routes/user.rotues'
+import userRoutes from './routes/user.routes'
 import authRoutes from './routes/auth.routes'
+import executiveRoutes from './routes/executive.routes'
+import cors from 'cors'
+app.use(cors())
 app.use(express.json());
-const port = 3011
+import path from 'path';
 
 
-
-
+const port = process.env.APP_PORT;
 AppDataSource.initialize()
-.then(()=>{
+    .then(() => {
 
+        app.use('/storage/documents', express.static(path.join(__dirname, '..', 'storage', 'documents'))); // for uploads
 
-    
-// app.get('/', async(req,res:Response)=>{
-   
-//     const userRepo = AppDataSource.getRepository(User)
-//     const allRecords = await userRepo.find(); 
-//     res.send(allRecords)
-//  })
+        app.use('/user', userRoutes)
+        app.use('/auth', authRoutes)
+        app.use('/executive',executiveRoutes)
+        app.listen(port, () => {
+            console.log(`App working on ${port}`)
+        })
 
- app.use('/user',userRoutes)
- app.use('/auth',authRoutes)
-//  app.post('/user',createUser);
- 
-  
-    console.log('db connected')
-
-    app.listen(port,()=>{
-        console.log(`App working on ${port}`)
     })
-
-})
-.catch((err)=>{
-    console.log('db not connected',err)
-})
+    .catch((err) => {
+        console.log('db not connected',err)
+    })
