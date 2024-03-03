@@ -179,7 +179,7 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
     }
     msgTab.user_type = "EXECUTIVE";
     msgTab.executive_id_fk = execId;
-    msgTab.notify_client = true;
+    msgTab.notify_client = notify_client;
     msgTab.added_by = execId;
     msgTab.added_on = new Date();
 
