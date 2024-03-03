@@ -187,7 +187,9 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
 
     await msgRepo.save(msgTab);
 
-    sendEmailNotifyClientNewMessages(user_email_decoded);
+    if(notify_client){
+      sendEmailNotifyClientNewMessages(user_email_decoded);
+    }
     return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
 
   } catch (e) {
@@ -347,7 +349,7 @@ export const taxfilesList = async (req: Request, res: Response) => {
     // });
 
     const taxfiles = await taxfilesRepo.query(
-      `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status_name,ts.code AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id`,
+      `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status_name,ts.code AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email,t.user_id AS user_id FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id`,
     );
     // const taxfiles = await taxfilesRepo.query(
     //   `SELECT t.id AS id,t.moved_to_canada,t.date_of_entry,t.direct_deposit_cra,t.document_direct_deposit_cra,t.file_status,t.tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = p.code`,

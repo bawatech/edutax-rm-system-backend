@@ -140,7 +140,10 @@ export const sendEmail = async (to: string, subject: string, message: string) =>
   <br>\n
   Sincerely,
   <br>\n
-  <h3>The Edutax Team</h3>
+  <h3>Edu-Tax Inc.</h3>
+  <p>Unit 206</p>
+  <p>9886 Torbram Road</p>
+  <p>Brampton -ON</p>
   </div>
 
 
