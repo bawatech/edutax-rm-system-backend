@@ -49,6 +49,6 @@ export class CustomError extends Error {
         return res.status(e.code).json(e.data);
       } else {
         // return res.status(400).json({ message: 'Something went wrong', e });
-        return res.status(400).json({ message: 'Something went wrong', });
+        return res.status(400).json({ message: 'Something went wrong', e});
       }
   }

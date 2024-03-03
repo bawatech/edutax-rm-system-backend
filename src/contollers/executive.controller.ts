@@ -16,7 +16,7 @@ import { Templates } from '../entites/Templates';
 import bcrypt from 'bcrypt';
 import { MoreThan } from 'typeorm';
 import { Profile } from '../entites/Profile';
-import fs from "fs";
+import fs, { stat } from "fs";
 import path from "path";
 import { dec } from '../utils/commonFunctions';
 import { User } from '../entites/User';
@@ -338,19 +338,27 @@ export const getExecutiveMessages = async (req: Request, res: Response) => {
 
 
 export const taxfilesList = async (req: Request, res: Response) => {
+
+  const {tax_file_status} =req.query;
+  //--- data fiter
+  let tax_file_status_string = null
+  if(tax_file_status && typeof tax_file_status == 'string'){
+
+   const  tax_file_status_array= tax_file_status.split(',');
+      tax_file_status_string = tax_file_status_array.map((itm : any)=>{return `'${itm?.toString()?.trim()}'`}).filter((itm:any)=>itm.length>0)
+  }
+
+
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
-    // const taxfiles = await taxfilesRepo.find({
-    //   relations: ['user_detail'], select: {
-    //     user_detail: {
-    //       email: true,
-    //     },
-    //   }
-    // });
 
-    const taxfiles = await taxfilesRepo.query(
-      `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status_name,ts.code AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email,t.user_id AS user_id FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id`,
-    );
+    let query = `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status_name,ts.code AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email,t.user_id AS user_id FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id WHERE 1= 1 `;
+
+    if (tax_file_status_string && tax_file_status_string.length>0) {
+      query += ` AND t.file_status IN (${tax_file_status_string})`;
+    }
+    
+    const taxfiles = await taxfilesRepo.query(query);
     // const taxfiles = await taxfilesRepo.query(
     //   `SELECT t.id AS id,t.moved_to_canada,t.date_of_entry,t.direct_deposit_cra,t.document_direct_deposit_cra,t.file_status,t.tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = p.code`,
     // );
@@ -361,7 +369,7 @@ export const taxfilesList = async (req: Request, res: Response) => {
       return { ...taxfile, mobile_number: decodedMobileNumber, email: decodedEmail };
     });
 
-    return sendSuccess(res, "Taxfiles Fetched Successfully", { taxfiles: taxfilesDecoded }, 200);
+    return sendSuccess(res, "Taxfiles Fetched Successfully", {tax_file_status_string,taxfiles: taxfilesDecoded }, 200);
   } catch (e) {
     return handleCatch(res, e);
   }
