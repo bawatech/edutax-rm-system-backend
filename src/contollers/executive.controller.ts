@@ -187,6 +187,19 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
 
     await msgRepo.save(msgTab);
 
+    let msgCount = parseInt(String(user.message_by_executive_count)) || 0;
+    if (msgCount >= 0) {
+      msgCount = msgCount + 1;
+    } else {
+      msgCount = 1;
+    }
+    user.message_by_executive_count = msgCount;
+    const updateCount = await userRepo.update(user.id, user);
+    if (!updateCount) {
+      return sendError(res, "Unable to update Message Count");
+    }
+
+
     if(notify_client){
       sendEmailNotifyClientNewMessages(user_email_decoded);
     }

@@ -72,6 +72,9 @@ export class User {
     @Column({ type: "timestamp", nullable: true })
     client_last_msg_time: Date;
 
+    @Column({ default: 0, nullable: true })
+    message_by_executive_count: number;
+
     @OneToMany(() => Messages, (message) => message.user_detail)
     profiles: Messages[]
 

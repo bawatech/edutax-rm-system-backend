@@ -33,7 +33,6 @@ INSERT INTO `provinces` (`code`, `name`) VALUES
 ('NU', 'Nunavut'),
 ('ON', 'Ontario'),
 ('PE', 'Prince Edward Island'),
-('QC', 'Quebec'),
 ('SK', 'Saskatchewan'),
 ('YT', 'Yukon');
 
@@ -58,3 +57,6 @@ INSERT INTO `document_types` (`id`, `name`, `user_type`) VALUES ('1', 'T4','CLIE
 
 --21 st February , 2024
 INSERT INTO `templates` (`id`, `code`, `title`, `description`, `is_fixed`, `id_status`, `is_deleted`, `added_on`, `added_by`, `updated_on`, `updated_by`, `deleted_on`, `deleted_by`) VALUES ('1', 'TEMP_ONE', 'Template 1', 'Executive message for template one', '0', 'ACTIVE', '0', NULL, NULL, NULL, NULL, NULL, NULL), ('2', 'TEMP_TWO', 'Template 2', 'Executive message for template two', '0', 'ACTIVE', '0', NULL, NULL, NULL, NULL, NULL, NULL), ('3', 'TEMP_THREE', 'Template 3', 'Executive message for template three', '1', 'ACTIVE', '0', NULL, NULL, NULL, NULL, NULL, NULL);
+
+--4th March , 2024
+ALTER TABLE `user` ADD `message_by_executive_count` INT(11) NULL DEFAULT '0' AFTER `client_last_msg`;
