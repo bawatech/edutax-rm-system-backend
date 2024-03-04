@@ -434,7 +434,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
 
       if (search && search != null && search != "" && search != undefined) {
         let encoded_email = enc((search as string).toLowerCase());
-        query += ` AND prof.firstname LIKE '%${search}%' OR prof.lastname LIKE '%${search}%' OR prof.mob_last_digits = '${search}' OR us.email = '${encoded_email}'`;
+        query += ` AND prof.firstname LIKE '%${search}%' OR prof.lastname LIKE '%${search}%' OR prof.mob_last_digits LIKE '%${search}%' OR us.email = '${encoded_email}'`;
       }
 
 
