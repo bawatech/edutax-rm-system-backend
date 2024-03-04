@@ -113,8 +113,6 @@ export const resendSignupOtp = async (req: Request, res: Response) => {
 };
 
 
-
-
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   if (!email || email?.trim() === "" || email?.length <= 0 || !password || password?.trim() === "" || password?.length <= 0) {
@@ -124,44 +122,74 @@ export const login = async (req: Request, res: Response) => {
     const lowerCaseEmail = email.toLowerCase();
     let enc_email = enc(lowerCaseEmail);
     const userRepository = AppDataSource.getRepository(User);
-    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE" } });
+    const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE", is_deleted: false } });
     if (!user) {
       return sendError(res, "Invalid email");
     }
-    // if (user.password !== password) {
-    //   return sendError(res, "Invalid password");
-    // }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return sendError(res, "Invalid password");
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    sendLoginVerification(lowerCaseEmail, otp);
+    const user_id = user.id;
 
-    user.otp = otp;
-    const newOtp = await userRepository.update(user.id, user);
+    const token = geenrateToken();
+    const userLog = new UserLog();
+    userLog.user_id_fk = user_id;
+    userLog.key = token;
+    userLog.added_on = new Date();
+    const userLogRepository = AppDataSource.getRepository(UserLog);
+    await userLogRepository.save(userLog);
+    const profileRepo = AppDataSource.getRepository(Profile)
+    const profile = await profileRepo.findOne({ where: { user: { id: user?.id } }, relations: ['marital_status_detail', 'province_detail'] });
 
-    if (!newOtp) {
-      return sendError(res, "Unable to set Otp");
+    user.email = dec(user.email);
+    if (profile) {
+      profile.mobile_number = dec(profile.mobile_number);
     }
 
-    // const token = geenrateToken();
-    // const userLog = new UserLog();
-    // userLog.user_id_fk = user.id;
-    // userLog.key = token;
-    // userLog.added_on = new Date();
-    // const userLogRepository = AppDataSource.getRepository(UserLog);
-    // await userLogRepository.save(userLog);
-    // const profileRepo = AppDataSource.getRepository(Profile)
-    // const profile = profileRepo.findOne({ where: { user: { id: user?.id } } })
-
-
-    return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", { email: lowerCaseEmail });
+    return sendSuccess(res, "LoggedIn successfully", { token, user, profile }, 201);
   } catch (e) {
     return handleCatch(res, e);
   }
 };
+
+
+// export const login = async (req: Request, res: Response) => {
+//   const { email, password } = req.body;
+//   if (!email || email?.trim() === "" || email?.length <= 0 || !password || password?.trim() === "" || password?.length <= 0) {
+//     return sendError(res, "Email and Password are required");
+//   }
+//   try {
+//     const lowerCaseEmail = email.toLowerCase();
+//     let enc_email = enc(lowerCaseEmail);
+//     const userRepository = AppDataSource.getRepository(User);
+//     const user = await userRepository.findOne({ where: { email: enc_email, id_status: "ACTIVE" } });
+//     if (!user) {
+//       return sendError(res, "Invalid email");
+//     }
+
+//     const passwordMatch = await bcrypt.compare(password, user.password);
+//     if (!passwordMatch) {
+//       return sendError(res, "Invalid password");
+//     }
+
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//     sendLoginVerification(lowerCaseEmail, otp);
+
+//     user.otp = otp;
+//     const newOtp = await userRepository.update(user.id, user);
+
+//     if (!newOtp) {
+//       return sendError(res, "Unable to set Otp");
+//     }
+
+//     return sendSuccess(res, "LoggedIn successfully.Please Verify using Otp", { email: lowerCaseEmail });
+//   } catch (e) {
+//     return handleCatch(res, e);
+//   }
+// };
 
 export const resendLoginOtp = async (req: Request, res: Response) => {
   const { email } = req.body;
