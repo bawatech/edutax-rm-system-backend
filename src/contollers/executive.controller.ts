@@ -408,6 +408,11 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
 
 export const userMsgListCount = async (req: Request, res: Response) => {
   const { unread, search } = req?.query;
+
+  let pageNo = parseInt(req.query.pageNo as string) || 1;
+  const pageSize = parseInt(req.query.pageSize as string) || 10;
+  //const offset = (pageNo - 1) * pageSize;
+
   try {
     if (!unread || unread != "true") {
       // const messageRepository = AppDataSource.getRepository(Messages);
@@ -430,7 +435,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       const userRepo = AppDataSource.getRepository(User);
 
 
-      let query = `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false'`;
+      let query = `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname,prof.mob_last_digits FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false'`;
 
       if (search && search != null && search != "" && search != undefined) {
         let encoded_email = enc((search as string).toLowerCase());
@@ -440,6 +445,17 @@ export const userMsgListCount = async (req: Request, res: Response) => {
 
       query += ` ORDER BY us.client_last_msg_time DESC`;
 
+      const totalCountQuery = `SELECT COUNT(*) AS total FROM (${query}) AS totalCountQuery`;
+
+      const totalCountResult = await userRepo.query(totalCountQuery);
+      const totalCount = totalCountResult[0].total;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      if (pageNo > totalPages && totalPages > 0) {
+        pageNo = 1;
+      }
+
+      query += ` LIMIT ${pageSize} OFFSET ${(pageNo - 1) * pageSize}`;
       const user = await userRepo.query(
         query,
       );
@@ -452,7 +468,13 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       if (!user) {
         return sendError(res, "Unable to fetch Records");
       }
-      return sendSuccess(res, "Success", { list: usDecoded }, 200);
+      return sendSuccess(res, "Success", {
+        list: usDecoded, dataFilter: {
+          pageNo: pageNo,
+          pageSize: pageSize,
+          totalPages: totalPages
+        }
+      }, 200);
 
     } else if (unread == "true" || unread == true) {
 
@@ -477,7 +499,9 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       if (!user) {
         return sendError(res, "Unable to fetch Records");
       }
-      return sendSuccess(res, "Success", { list: usDecoded }, 200);
+      return sendSuccess(res, "Success", {
+        list: usDecoded,
+      }, 200);
 
     }
 
