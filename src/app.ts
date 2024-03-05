@@ -22,7 +22,7 @@ AppDataSource.initialize()
         app.use('/executive',executiveRoutes)
         app.listen(port, () => {
             console.log(`App working on ${port}`)
-        })
+        }) 
 
     })
     .catch((err) => {
