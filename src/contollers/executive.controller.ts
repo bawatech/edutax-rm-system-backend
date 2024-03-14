@@ -409,8 +409,8 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
 export const userMsgListCount = async (req: Request, res: Response) => {
   const { unread, search } = req?.query;
 
-  let pageNo = parseInt(req.query.pageNo as string) || 1;
-  const pageSize = parseInt(req.query.pageSize as string) || 10;
+  let pageNo = parseInt(req?.query?.pageNo as string) || 1;
+  const pageSize = parseInt(req?.query?.pageSize as string) || 10;
   //const offset = (pageNo - 1) * pageSize;
 
   try {
@@ -452,7 +452,7 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       const totalPages = Math.ceil(totalCount / pageSize);
 
       if (pageNo > totalPages && totalPages > 0) {
-        pageNo = 1;
+        pageNo = totalPages;
       }
 
       query += ` LIMIT ${pageSize} OFFSET ${(pageNo - 1) * pageSize}`;

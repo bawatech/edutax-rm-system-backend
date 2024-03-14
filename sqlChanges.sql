@@ -60,3 +60,6 @@ INSERT INTO `templates` (`id`, `code`, `title`, `description`, `is_fixed`, `id_s
 
 --4th March , 2024
 ALTER TABLE `user` ADD `message_by_executive_count` INT(11) NULL DEFAULT '0' AFTER `client_last_msg`;
+
+--5th March, 2024
+ALTER TABLE `user_log` ADD `last_activity_on` TIMESTAMP NULL DEFAULT NULL AFTER `is_deleted`;

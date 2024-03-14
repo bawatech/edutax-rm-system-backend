@@ -61,6 +61,7 @@ export const signUp = async (req: Request, res: Response) => {
     userLog.key = token;
     userLog.added_on = new Date();
     userLog.added_by = userData.id;
+    userLog.last_activity_on = new Date();
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
 
@@ -139,6 +140,7 @@ export const login = async (req: Request, res: Response) => {
     userLog.user_id_fk = user_id;
     userLog.key = token;
     userLog.added_on = new Date();
+    userLog.last_activity_on = new Date();
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
     const profileRepo = AppDataSource.getRepository(Profile)
@@ -252,6 +254,7 @@ export const verifyLogin = async (req: Request, res: Response) => {
     userLog.user_id_fk = user_id;
     userLog.key = token;
     userLog.added_on = new Date();
+    userLog.last_activity_on = new Date();
     const userLogRepository = AppDataSource.getRepository(UserLog);
     await userLogRepository.save(userLog);
     const profileRepo = AppDataSource.getRepository(Profile)
@@ -303,6 +306,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
       userLog.key = token;
       userLog.added_on = new Date();
       userLog.added_by = user?.id;
+      userLog.last_activity_on = new Date();
       const userLogRepository = AppDataSource.getRepository(UserLog);
       await userLogRepository.save(userLog);
 
