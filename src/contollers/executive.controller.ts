@@ -955,20 +955,44 @@ export const updateTaxfileExecutive = async (req: Request, res: Response) => {
 
 
 
+// const unlinkMultiFiles = (files: Express.Multer.File[] = []) => {
+//   for (const file of files as { filename: string }[]) {
+//     let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
+//     if (fs.existsSync(filepath)) {
+//       fs.unlinkSync(filepath);
+//     }
+//   }
+// }
 const unlinkMultiFiles = (files: Express.Multer.File[] = []) => {
   for (const file of files as { filename: string }[]) {
     let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', file.filename);
-    if (fs.existsSync(filepath)) {
-      fs.unlinkSync(filepath);
+    if (file.filename != null && file.filename != "" && file.filename != undefined) {
+      try {
+        if (fs.existsSync(filepath) && fs.statSync(filepath).isFile()) {
+          fs.unlinkSync(filepath);
+        }
+      } catch (error) {
+      }
     }
   }
 }
 
+// const unlinkSingleFile = (filename: any = null) => {
+//   if (filename != null) {
+//     let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', filename);
+//     if (fs.existsSync(filepath)) {
+//       fs.unlinkSync(filepath);
+//     }
+//   }
+// }
 const unlinkSingleFile = (filename: any = null) => {
-  if (filename != null) {
+  if (filename != null && filename != "" && filename != undefined) {
     let filepath = path.join(__dirname, '..', '..', 'storage', 'documents', filename);
-    if (fs.existsSync(filepath)) {
-      fs.unlinkSync(filepath);
+    try {
+      if (fs.existsSync(filepath) && fs.statSync(filepath).isFile()) {
+        fs.unlinkSync(filepath);
+      }
+    } catch (error) {
     }
   }
 }
