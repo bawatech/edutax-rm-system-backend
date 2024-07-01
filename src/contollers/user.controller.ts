@@ -739,7 +739,30 @@ export const getClientMsg = async (req: Request, res: Response) => {
       }
     });
 
+    const updateCount = await userRepo.update(user.id, { message_by_executive_count: 0 });
+    if (!updateCount) {
+      return sendError(res, "Unable to Reset Message Count");
+    }
+
     return sendSuccess(res, "Messages Fetched Successfully", { messages }, 200);
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+export const getClientMsgCount = async (req: Request, res: Response) => {
+  try {
+    const userId = req?.userId;
+    const userRepo = AppDataSource.getRepository(User);
+    const user = await userRepo.findOne({
+      where: { id: userId, id_status: "ACTIVE", is_deleted: false }, select: {
+        message_by_executive_count: true,
+      }
+    });
+    const msgCount = user?.message_by_executive_count;
+
+    return sendSuccess(res, "Success", { msgCount }, 200);
 
   } catch (e) {
     return handleCatch(res, e);

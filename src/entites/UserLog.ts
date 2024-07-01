@@ -22,6 +22,9 @@ export class UserLog {
     is_deleted: boolean;
 
     @Column({ type: "timestamp", nullable: true })
+    last_activity_on: Date;
+
+    @Column({ type: "timestamp", nullable: true })
     added_on: Date;
 
     @Column({ nullable: true })

@@ -18,7 +18,7 @@ import { MoreThan } from 'typeorm';
 import { Profile } from '../entites/Profile';
 import fs, { stat } from "fs";
 import path from "path";
-import { dec } from '../utils/commonFunctions';
+import { dec, enc } from '../utils/commonFunctions';
 import { User } from '../entites/User';
 import { DocumentTypes } from '../entites/DocumentTypes';
 import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp, sendUploadedDocumentNotify } from '../services/EmailManager';
@@ -187,7 +187,20 @@ export const addExecutiveMsg = async (req: Request, res: Response) => {
 
     await msgRepo.save(msgTab);
 
-    if(notify_client){
+    let msgCount = parseInt(String(user.message_by_executive_count)) || 0;
+    if (msgCount >= 0) {
+      msgCount = msgCount + 1;
+    } else {
+      msgCount = 1;
+    }
+    user.message_by_executive_count = msgCount;
+    const updateCount = await userRepo.update(user.id, user);
+    if (!updateCount) {
+      return sendError(res, "Unable to update Message Count");
+    }
+
+
+    if (notify_client) {
       sendEmailNotifyClientNewMessages(user_email_decoded);
     }
     return sendSuccess(res, "Message Added Successfully", { msgTab }, 201);
@@ -339,13 +352,13 @@ export const getExecutiveMessages = async (req: Request, res: Response) => {
 
 export const taxfilesList = async (req: Request, res: Response) => {
 
-  const {tax_file_status} =req.query;
+  const { tax_file_status } = req.query;
   //--- data fiter
   let tax_file_status_string = null
-  if(tax_file_status && typeof tax_file_status == 'string'){
+  if (tax_file_status && typeof tax_file_status == 'string') {
 
-   const  tax_file_status_array= tax_file_status.split(',');
-      tax_file_status_string = tax_file_status_array.map((itm : any)=>{return `'${itm?.toString()?.trim()}'`}).filter((itm:any)=>itm.length>0)
+    const tax_file_status_array = tax_file_status.split(',');
+    tax_file_status_string = tax_file_status_array.map((itm: any) => { return `'${itm?.toString()?.trim()}'` }).filter((itm: any) => itm.length > 0)
   }
 
 
@@ -354,10 +367,10 @@ export const taxfilesList = async (req: Request, res: Response) => {
 
     let query = `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status_name,ts.code AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email,t.user_id AS user_id FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id WHERE 1= 1 `;
 
-    if (tax_file_status_string && tax_file_status_string.length>0) {
+    if (tax_file_status_string && tax_file_status_string.length > 0) {
       query += ` AND t.file_status IN (${tax_file_status_string})`;
     }
-    
+
     const taxfiles = await taxfilesRepo.query(query);
     // const taxfiles = await taxfilesRepo.query(
     //   `SELECT t.id AS id,t.moved_to_canada,t.date_of_entry,t.direct_deposit_cra,t.document_direct_deposit_cra,t.file_status,t.tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = p.code`,
@@ -369,7 +382,7 @@ export const taxfilesList = async (req: Request, res: Response) => {
       return { ...taxfile, mobile_number: decodedMobileNumber, email: decodedEmail };
     });
 
-    return sendSuccess(res, "Taxfiles Fetched Successfully", {tax_file_status_string,taxfiles: taxfilesDecoded }, 200);
+    return sendSuccess(res, "Taxfiles Fetched Successfully", { tax_file_status_string, taxfiles: taxfilesDecoded }, 200);
   } catch (e) {
     return handleCatch(res, e);
   }
@@ -394,7 +407,12 @@ export const taxfilesListWithCount = async (req: Request, res: Response) => {
 
 
 export const userMsgListCount = async (req: Request, res: Response) => {
-  const { unread } = req?.query;
+  const { unread, search } = req?.query;
+
+  let pageNo = parseInt(req?.query?.pageNo as string) || 1;
+  const pageSize = parseInt(req?.query?.pageSize as string) || 10;
+  //const offset = (pageNo - 1) * pageSize;
+
   try {
     if (!unread || unread != "true") {
       // const messageRepository = AppDataSource.getRepository(Messages);
@@ -415,8 +433,31 @@ export const userMsgListCount = async (req: Request, res: Response) => {
 
 
       const userRepo = AppDataSource.getRepository(User);
+
+
+      let query = `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname,prof.mob_last_digits FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false'`;
+
+      if (search && search != null && search != "" && search != undefined) {
+        let encoded_email = enc((search as string).toLowerCase());
+        query += ` AND prof.firstname LIKE '%${search}%' OR prof.lastname LIKE '%${search}%' OR prof.mob_last_digits LIKE '%${search}%' OR us.email = '${encoded_email}'`;
+      }
+
+
+      query += ` ORDER BY us.client_last_msg_time DESC`;
+
+      const totalCountQuery = `SELECT COUNT(*) AS total FROM (${query}) AS totalCountQuery`;
+
+      const totalCountResult = await userRepo.query(totalCountQuery);
+      const totalCount = totalCountResult[0].total;
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      if (pageNo > totalPages && totalPages > 0) {
+        pageNo = totalPages;
+      }
+
+      query += ` LIMIT ${pageSize} OFFSET ${(pageNo - 1) * pageSize}`;
       const user = await userRepo.query(
-        `SELECT us.id AS user_id,us.email AS user_email, us.client_message_count,us.client_last_msg_time,us.client_last_msg, prof.firstname,prof.lastname FROM user us LEFT JOIN profile prof ON us.id = prof.user_id WHERE us.id_status = 'ACTIVE' AND us.is_deleted = 'false' ORDER BY us.client_last_msg_time DESC`,
+        query,
       );
 
       const usDecoded = user.map((us: any) => {
@@ -427,7 +468,13 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       if (!user) {
         return sendError(res, "Unable to fetch Records");
       }
-      return sendSuccess(res, "Success", { list: usDecoded }, 200);
+      return sendSuccess(res, "Success", {
+        list: usDecoded, dataFilter: {
+          pageNo: pageNo,
+          pageSize: pageSize,
+          totalPages: totalPages
+        }
+      }, 200);
 
     } else if (unread == "true" || unread == true) {
 
@@ -452,7 +499,9 @@ export const userMsgListCount = async (req: Request, res: Response) => {
       if (!user) {
         return sendError(res, "Unable to fetch Records");
       }
-      return sendSuccess(res, "Success", { list: usDecoded }, 200);
+      return sendSuccess(res, "Success", {
+        list: usDecoded,
+      }, 200);
 
     }
 

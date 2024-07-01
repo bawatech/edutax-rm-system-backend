@@ -38,17 +38,24 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
             return res.status(401).json({ message: "Invalid token." });
         }
 
-        const tokenTime = new Date(userLog.added_on);
-        const currentTime = new Date();
 
-        const timeDiff = Math.abs(currentTime.getTime() - tokenTime.getTime());
-        const diffInMinutes = Math.floor(timeDiff / (1000 * 60));
-        if (diffInMinutes > 30) {
-            userLog.id_status = "INACTIVE";
-            userLog.is_deleted = true;
-            await userLogRepo.update(userLog.id, userLog);
-            return res.status(401).json({ message: "Session Expired" });
+        const old_last_activity_on = userLog.last_activity_on;
+        if (old_last_activity_on != undefined && old_last_activity_on != null) {
+            const tokenTime = new Date(old_last_activity_on);
+            const currentTime = new Date();
+            const timeDiff = Math.abs(currentTime.getTime() - tokenTime.getTime());
+            const diffInMinutes = Math.floor(timeDiff / (1000 * 60));
+            if (diffInMinutes > 10) {
+                userLog.id_status = "INACTIVE";
+                userLog.is_deleted = true;
+                await userLogRepo.update(userLog.id, userLog);
+                return res.status(401).json({ message: "Session Expired" });
+            }
         }
+
+        const new_last_activity_on = new Date();
+        await userLogRepo.update(userLog.id, { last_activity_on: new_last_activity_on });
+
 
         const userId = userLog.user_id_fk;
 

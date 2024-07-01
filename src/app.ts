@@ -10,7 +10,7 @@ app.use(cors())
 app.use(express.json());
 import path from 'path';
 
-
+ 
 const port = process.env.APP_PORT;
 AppDataSource.initialize()
     .then(() => {
