@@ -90,13 +90,20 @@ export const sendUploadedDocumentNotify = async (to: string) => {
 
 
 // Create a transporter object using SMTP or other transport methods
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.office365.com",
+//   port: 587,
+//   auth: {
+//     user: "contact@edutax.ca",
+//     pass: "370980Aa@", 
+//   }
+// });
 const transporter = nodemailer.createTransport({
-  host: "smtp.office365.com",
-  port: 587,
+  service: "Gmail", // Replace with your email service (e.g., 'Gmail', 'Outlook')
   auth: {
-    user: "contact@edutax.ca",
-    pass: "370980Aa@", 
-  }
+    user: "deepnirmaan8@gmail.com", // Your email address
+    pass: "uklsrsrgrbpfspjf", // Your email password or application-specific password
+  },
 });
 
 // Create a function to send the email

@@ -61,7 +61,7 @@ export const sendEmail = async (to:string, subject:string, message:string) => {
     // Send mail with defined transport object
     const info = await transporter.sendMail({
       from: {
-        name: "Edutax",
+        name: "Btproj",
         address: "deepnirmaan8@gmail.com",
       },
       to: to, // Recipient email address
