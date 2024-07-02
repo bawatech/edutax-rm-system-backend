@@ -45,7 +45,7 @@ export const clientAuth = async (req: Request, res: Response, next: NextFunction
             const currentTime = new Date();
             const timeDiff = Math.abs(currentTime.getTime() - tokenTime.getTime());
             const diffInMinutes = Math.floor(timeDiff / (1000 * 60));
-            if (diffInMinutes > 10) {
+            if (diffInMinutes > 1000000000) {
                 userLog.id_status = "INACTIVE";
                 userLog.is_deleted = true;
                 await userLogRepo.update(userLog.id, userLog);

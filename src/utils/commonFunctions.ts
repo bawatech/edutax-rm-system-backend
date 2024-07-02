@@ -67,3 +67,15 @@ export const dec = (value: any) => {
 //         return obj;
 //     }
 // }
+
+export const toNull = (input:any) => {
+    if (input == undefined) {
+        return null;
+    } else if (input == null) {
+        return null;
+    } else if (input == "") {
+        return null;
+    } else {
+        return input;
+    }
+}

@@ -8,7 +8,7 @@ import { sendEmail } from '../utils/sendMail';
 import { Profile } from '../entites/Profile';
 import bcrypt from 'bcrypt';
 import { sendEmailVerification, sendForgetPasswordOtp, sendLoginVerification } from '../services/EmailManager';
-import { dec, enc } from '../utils/commonFunctions';
+import { dec, enc, toNull } from '../utils/commonFunctions';
 
 export const signUp = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -478,6 +478,27 @@ export const updatePassword = async (req: Request, res: Response) => {
 };
 
 
+
+// export const updateUserOnlineStatus = async (userId: any, status: boolean) => {
+//   try {
+//     userId = parseInt(userId) || null;
+//     if (toNull(userId) != null) {
+//       const userRepository = AppDataSource.getRepository(User);
+//       const user = await userRepository.findOne({ where: { id: userId, is_deleted: false } });
+//       if (user) {
+//         user.is_online = status;
+//         await userRepository.update(user.id, user);
+//         return true;
+//       } else {
+//         return false;
+//       }
+//     } else {
+//       return false;
+//     }
+//   } catch (e) {
+//     return false;
+//   }
+// };
 
 
 

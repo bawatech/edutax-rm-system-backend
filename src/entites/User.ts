@@ -30,6 +30,9 @@ export class User {
     @Column({ default: 'ACTIVE', type: 'enum', enum: ['ACTIVE', 'INACTIVE'] })
     id_status: string;
 
+    // @Column({ type: 'boolean', default: false })
+    // is_online: boolean;
+
     @Column({ type: 'boolean', default: false })
     is_deleted: boolean;
 
