@@ -13,6 +13,9 @@ const server = http.createServer(app);
 app.use(cors())
 app.use(express.json());
 import path from 'path';
+import { addOnlineStatus, deleteOnlineStatus, updateOnlineStatus } from "./contollers/socket.controller";
+import { OnlineStatus } from "./entites/OnlineStatus";
+import { toNull } from "./utils/commonFunctions";
 // import { updateUserOnlineStatus } from "./contollers/auth.controller";
 
 const io = new Server(server, {
@@ -25,23 +28,48 @@ const io = new Server(server, {
 });
 
 io.on('connection', (socket) => {
-    socket.on('register', async (userId: any) => {
-        socket.join(userId);
-        socket.to(userId).emit('onlineStatus', { userId, onlineStatus: true });
-        // await updateUserOnlineStatus(userId, true);
-        logRooms();
+    socket.on('register', async (data: any) => {
+        if (toNull(data.room) != null) {
+            socket.join(data.room);
+            await addOnlineStatus(data);
+            logRooms();
+        } else {
+            await deleteOnlineStatus(socket.id);
+            socket.disconnect(true);
+            socket.leave(socket.id);
+        }
+    });
+
+    socket.on('focus', async () => {
+        let data = { socket_id: socket.id, in_chat: "YES" };
+        await updateOnlineStatus(data);
+    });
+
+    socket.on('blur', async () => {
+        let data = { socket_id: socket.id, in_chat: "NO" };
+        await updateOnlineStatus(data);
     });
 
     socket.on('message', async (data) => {
         const { roomId } = data;
-        socket.to(roomId).emit('message', data);
-        // Send notification if receiver is offline
-        // if (!Object.values(users).includes(receiverId)) {
-        //     console.log(`Send notification to ${receiverId}`);
-        // }
+        const onlineStatusRepo = AppDataSource.getRepository(OnlineStatus);
+        const onlineStatus = await onlineStatusRepo.find({ where: { room: roomId } });
+        for (const onlineSoc of onlineStatus) {
+            let in_chat = onlineSoc.in_chat;
+            let socket_id = onlineSoc.socket_id;
+            if (in_chat === "YES") {
+                console.log("message sent in chat screen");
+                socket.to(roomId).emit('message', data);
+            } else if(in_chat === "NO") {
+                console.log("message sent as notification");
+                io.to(socket_id).emit('notification', data);
+            }
+        }
+      //  logRooms();
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
+        await deleteOnlineStatus(socket.id);
         socket.disconnect(true);
         socket.leave(socket.id);
         let rooms: any = io.sockets.adapter.rooms;
