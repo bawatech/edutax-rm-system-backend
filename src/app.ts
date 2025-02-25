@@ -6,7 +6,17 @@ import userRoutes from './routes/user.routes'
 import authRoutes from './routes/auth.routes'
 import executiveRoutes from './routes/executive.routes'
 import cors from 'cors'
-app.use(cors())
+
+const allowedOrigins = process.env?.ALLOWED_ORIGINS?.split(',') || '';
+app.use(cors({
+    origin: (origin, callback) => {
+        if (allowedOrigins.indexOf(origin!) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+}));
 app.use(express.json());
 import path from 'path';
 
