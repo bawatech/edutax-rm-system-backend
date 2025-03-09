@@ -22,7 +22,9 @@ import { dec, enc } from '../utils/commonFunctions';
 import { User } from '../entites/User';
 import { DocumentTypes } from '../entites/DocumentTypes';
 import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp, sendUploadedDocumentNotify } from '../services/EmailManager';
-
+import Stripe from "stripe";
+import { PaymentOrder } from '../entites/PaymentOrders';
+import { title } from 'process';
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -1053,4 +1055,93 @@ const geenrateToken = () => {
 }
 
 
+
+export const createPaymentRequest = async (req: Request, res: Response) => {
+  const { taxfile_id, amount, title } = req.body;
+  try {
+    if (!taxfile_id) {
+      return sendError(res, "Taxfile is required");
+    }
+
+    if (!title || title?.trim()?.length < 1) {
+      return sendError(res, "Title is required");
+    }
+
+    let formattedAmount = '0.00'
+
+    if (amount) {
+      let numericAmount = parseFloat(amount)
+
+      if (isNaN(numericAmount)) {
+        return sendError(res, "Invalid amount")
+      }
+
+      formattedAmount = numericAmount.toFixed(2);
+
+    } else {
+      return sendError(res, "Amount is required");
+    }
+
+    // Genereate Order
+    const orderRepo = AppDataSource.getRepository(PaymentOrder)
+    const order = new PaymentOrder;
+    order.amount = formattedAmount;
+    order.taxfile_id = taxfile_id
+    order.title = title,
+    order.added_by = req?.execId;
+    order.added_on = new Date();
+      order.payment_status = 'Pending'
+
+    const newOrder = await orderRepo.save(order)
+
+    const paymentSession = await getPaymentLink(parseFloat(formattedAmount), title, newOrder?.id);
+
+    if (!paymentSession) {
+      return sendError(res, "Unable to generate payment links")
+    }
+    newOrder.payment_url= paymentSession?.url;
+    newOrder.session_id= paymentSession?.id;
+
+    const newOrderUpdated = await orderRepo.save(newOrder)
+
+    res.status(201).json({
+      message: 'Template Added successfully', response: {
+        order:newOrderUpdated
+      }
+    });
+
+
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+const getPaymentLink = async (amount: number, title: string, orderId: number) => {
+  try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+    const session: any = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'cad',
+            product_data: {
+              name: title
+            },
+            unit_amount: Math.round(amount * 100)
+          },
+          quantity: 1,
+        }
+      ],
+      mode: 'payment',
+      success_url: `${process.env.FRONT_BASE_URL}/client/payment/status?status=Success`,
+      cancel_url: `${process.env.FRONT_BASE_URL}/client/payment/status?status=Cancel`,
+      metadata: { orderId },
+    });
+    return session;
+
+  } catch (error) {
+    return null;
+  }
+}
 
