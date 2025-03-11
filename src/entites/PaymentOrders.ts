@@ -1,9 +1,15 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Taxfile } from "./Taxfile";
 
 @Entity({name:'payment_orders'})
 export class PaymentOrder {
     @PrimaryGeneratedColumn()
     id: number;
+
+
+    @Column({nullable:false,default:null})
+    uid: string;
+
 
     @Column({ nullable: true })
     taxfile_id: number;
@@ -47,6 +53,10 @@ export class PaymentOrder {
 
     @Column({ nullable: true })
     deleted_by: number;
+
+    @ManyToOne(()=>Taxfile, (taxfile)=>taxfile.payment_orders)
+    @JoinColumn({name:'taxfile_id'})
+    taxfile:Taxfile
 
 
 }

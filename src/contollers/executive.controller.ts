@@ -3,7 +3,7 @@ import { Executive } from '../entites/Executive';
 import { ExecutiveLog } from '../entites/ExecutiveLog';
 import { AppDataSource } from '../AppDataSource';
 import { v4 as uuidv4 } from 'uuid';
-import { validate } from 'class-validator';
+import { isString, validate } from 'class-validator';
 import { Taxfile } from '../entites/Taxfile';
 import { TaxfileStatus } from '../entites/TaxfileStatus';
 import { TaxfileStatusLog } from '../entites/TaxfileStatusLog';
@@ -14,14 +14,14 @@ import { Documents } from '../entites/Documents';
 import { sendEmail } from '../utils/sendMail';
 import { Templates } from '../entites/Templates';
 import bcrypt from 'bcrypt';
-import { MoreThan } from 'typeorm';
+import { MoreThan, Not } from 'typeorm';
 import { Profile } from '../entites/Profile';
 import fs, { stat } from "fs";
 import path from "path";
 import { dec, enc } from '../utils/commonFunctions';
 import { User } from '../entites/User';
 import { DocumentTypes } from '../entites/DocumentTypes';
-import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp, sendUploadedDocumentNotify } from '../services/EmailManager';
+import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp, sendPaymentLink, sendUploadedDocumentNotify } from '../services/EmailManager';
 import Stripe from "stripe";
 import { PaymentOrder } from '../entites/PaymentOrders';
 import { title } from 'process';
@@ -367,7 +367,7 @@ export const taxfilesList = async (req: Request, res: Response) => {
   try {
     const taxfilesRepo = AppDataSource.getRepository(Taxfile);
 
-    let query = `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status_name,ts.code AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email,t.user_id AS user_id FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id WHERE tax_year= '2024' `;
+    let query = `SELECT t.id AS id,pv.name AS taxfile_province,moved_to_canada,date_of_entry,direct_deposit_cra,document_direct_deposit_cra,ts.name AS file_status_name,ts.code AS file_status,tax_year,t.added_on,prof.firstname,prof.lastname,prof.date_of_birth,prof.street_number,prof.street_name,prof.city,prof.postal_code,prof.mobile_number,m.name AS marital_status,p.name AS province, us.email AS email,t.user_id AS user_id,(SELECT count(id) from payment_orders where taxfile_id=t.id and payment_status='Paid') as payment_paid_count FROM taxfile t LEFT JOIN profile prof ON t.user_id = prof.user_id LEFT JOIN marital_status m ON prof.marital_status = m.code LEFT JOIN provinces p ON prof.province = p.code LEFT JOIN provinces pv ON t.taxfile_province = pv.code LEFT JOIN taxfile_status ts ON t.file_status = ts.code LEFT JOIN user us ON t.user_id = us.id WHERE tax_year= '2024' `;
 
     if (tax_file_status_string && tax_file_status_string.length > 0) {
       query += ` AND t.file_status IN (${tax_file_status_string})`;
@@ -540,7 +540,8 @@ export const taxfileDetail = async (req: Request, res: Response) => {
     //   }
     // });
     const taxfile = await taxRepo.findOne({
-      where: { id: id }
+      where: { id: id },
+      relations:['payment_orders']
     });
 
     if (!taxfile) {
@@ -1083,18 +1084,23 @@ export const createPaymentRequest = async (req: Request, res: Response) => {
     }
 
     // Genereate Order
+    const uuid = uuidv4();
     const orderRepo = AppDataSource.getRepository(PaymentOrder)
     const order = new PaymentOrder;
     order.amount = formattedAmount;
+    order.uid = uuid;
     order.taxfile_id = taxfile_id
     order.title = title,
     order.added_by = req?.execId;
     order.added_on = new Date();
       order.payment_status = 'Pending'
 
+      
+      // order.payment_url= 'http://localhost:3000/payment/result'; // to be remvoved
+      // order.session_id= 'abdclldfds'; // to be remvoved
     const newOrder = await orderRepo.save(order)
 
-    const paymentSession = await getPaymentLink(parseFloat(formattedAmount), title, newOrder?.id);
+    const paymentSession = await getPaymentLink(parseFloat(formattedAmount), title, newOrder?.id,uuid);
 
     if (!paymentSession) {
       return sendError(res, "Unable to generate payment links")
@@ -1104,19 +1110,36 @@ export const createPaymentRequest = async (req: Request, res: Response) => {
 
     const newOrderUpdated = await orderRepo.save(newOrder)
 
+    const savedOrder = await orderRepo.findOne(
+      {
+        where:{
+          id:newOrder?.id
+        },
+        relations:['taxfile.user_detail.profile']
+      }
+    )
+
+    sendPaymentLink(dec(savedOrder?.taxfile?.user_detail?.email),{
+      name:savedOrder?.taxfile?.user_detail?.profile?.firstname || null,
+      title: order?.title || 'Invoice',
+      amount:order?.amount,
+      payment_url:order?.payment_url
+    })
+
     res.status(201).json({
-      message: 'Template Added successfully', response: {
+      message: 'Payment requested created successfully', response: {
         order:newOrderUpdated
       }
     });
 
 
   } catch (e) {
+    console.log('EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEee',e)
     return handleCatch(res, e);
   }
 };
 
-const getPaymentLink = async (amount: number, title: string, orderId: number) => {
+const getPaymentLink = async (amount: number, title: string, orderId: number,uuid:string) => {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
     const session: any = await stripe.checkout.sessions.create({
@@ -1134,14 +1157,75 @@ const getPaymentLink = async (amount: number, title: string, orderId: number) =>
         }
       ],
       mode: 'payment',
-      success_url: `${process.env.FRONT_BASE_URL}/client/payment/status?status=Success`,
-      cancel_url: `${process.env.FRONT_BASE_URL}/client/payment/status?status=Cancel`,
+      success_url: `${process.env.WEBAPP_BASE_URL}/payment/response/${uuid}`,
+      cancel_url: `${process.env.WEBAPP_BASE_URL}/payment/response/${uuid}`,
       metadata: { orderId },
     });
     return session;
 
   } catch (error) {
+    console.log('STRIPE ERROR IS ',error)
     return null;
   }
 }
+
+export const verifyPaymentOrder = async (req: Request, res: Response) => {
+  try {
+    const order_id = parseInt(req.params.order_id);
+
+    const repoPaymentOrder = AppDataSource.getRepository(PaymentOrder);
+
+    const order = await repoPaymentOrder.findOne({where:{id:order_id,payment_status:'Paid'}});
+
+    if (!order) {
+      return sendError(res, "Order not found")
+    }
+
+    if(order){
+      order.payment_status = 'Verified';
+      order.payment_intent_id = 'test'
+      order.payment_status_updated_on = new Date()
+      await repoPaymentOrder.save(order)
+    }
+
+  
+    res.status(200).json({ message: 'Webhook received successfully' });
+  } catch (e) {
+    console.error('STRIPE WEBHOOK ERROR:', e);
+    return handleCatch(res, e);
+  }
+};
+
+export const refreshPaymentOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const order_id = parseInt(req.params.order_id);
+
+    const repoPaymentOrder = AppDataSource.getRepository(PaymentOrder);
+
+    const order = await repoPaymentOrder.findOne({where:{id:order_id,payment_status:'Pending'}});
+
+    if (!order) {
+      return sendError(res, "Order not found")
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
+
+    const session = await stripe.checkout.sessions.retrieve(
+      order?.session_id
+    );
+
+    if(session?.payment_status == 'paid'){
+      order.payment_status = 'Paid';
+      order.payment_intent_id = isString(session?.payment_intent) ? session?.payment_intent : '';
+      order.payment_status_updated_on = new Date()
+      await repoPaymentOrder.save(order)
+    }
+
+  
+    res.status(200).json({ message: 'Status updated successfully',session });
+  } catch (e) {
+    console.error('STRIPE WEBHOOK ERROR:', e);
+    return handleCatch(res, e);
+  }
+};
 

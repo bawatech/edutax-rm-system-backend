@@ -94,7 +94,7 @@ export class Profile {
     @Column({ nullable: true })
     deleted_by: number;
 
-    @OneToOne(() => User)
+    @OneToOne(() => User,(user)=>user.profile)
     @JoinColumn({ name: 'user_id' })
     user: User
 

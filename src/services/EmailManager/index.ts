@@ -88,6 +88,43 @@ export const sendUploadedDocumentNotify = async (to: string) => {
 
 
 
+export const sendPaymentLink = async (to: string,data:{
+  name:string | null,
+  amount:string|number,
+  title:string,
+  payment_url:string
+
+}) => {
+
+  const subject = "Edutax | Payment Request";
+  const message = `Dear ${data?.name || `Sir/Mam`}
+      \n <br>
+      \n <br>
+      I hope you're doing well!
+      \n <br>
+      \n <br>
+      Please find below the secure payment link
+        \n <br>
+        Title : <b>${data?.title}</b>
+        \n <br>
+        Amount : <b>${data?.amount}</b>
+        \n <br>
+        \n <br>
+        Please follow the following link to make payment
+        \n <br>
+        <a href="${data?.payment_url}" style="color:blue;font-weight:bold"> Click here to make payment </a>
+        \n <br>
+        \n <br>
+        Click the link to complete your payment securely. If you have any questions, feel free to reach out.
+        \n <br>Thank you for your business!
+        \n <br>
+        \n <br>`
+  const send = await sendEmail(to, subject, message)
+  return send
+}
+
+
+
 
 // Create a transporter object using SMTP or other transport methods
 // const transporter = nodemailer.createTransport({
@@ -101,8 +138,8 @@ export const sendUploadedDocumentNotify = async (to: string) => {
 const transporter = nodemailer.createTransport({
   service: "Gmail", // Replace with your email service (e.g., 'Gmail', 'Outlook')
   auth: {
-    user: "deepnirmaan8@gmail.com", // Your email address
-    pass: "uklsrsrgrbpfspjf", // Your email password or application-specific password
+    user: process.env.MAILER_EMAIL || 'company@company.com',
+    pass: process.env.MAILER_PASSWORD || '',
   },
 });
 

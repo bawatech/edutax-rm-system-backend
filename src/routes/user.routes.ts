@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { acceptSpouseInvitation, addClientMessage, addClientMsg, addTaxfile, getClientMessages, getClientMsg, getClientMsgCount, getDocumentTypes, getMaritalStatus, getProfile, getProvinces, getSpouse, sendSpouseInvitation, taxFileDetails, unlinkSpouse, updateProfile, updateTaxfile, userTaxFileList } from "../contollers/user.controller";
+import { acceptSpouseInvitation, addClientMessage, addClientMsg, addTaxfile, getClientMessages, getClientMsg, getClientMsgCount, getDocumentTypes, getMaritalStatus, getPaymentOrderResponse, getProfile, getProvinces, getSpouse, sendSpouseInvitation, taxFileDetails, unlinkSpouse, updateProfile, updateTaxfile, userTaxFileList } from "../contollers/user.controller";
 import multer from 'multer';
 import fs from "fs";
 import path from "path";
@@ -86,6 +86,8 @@ router.get("/message/count", clientAuth, getClientMsgCount);
 router.get("/marital-status", getMaritalStatus);
 router.get("/provinces", getProvinces);
 router.get("/document-types", getDocumentTypes);
+router.get("/document-types", getDocumentTypes);
+router.get("/payment/order-status/:order_uid", getPaymentOrderResponse);
 
 
 export default router

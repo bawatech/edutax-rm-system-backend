@@ -18,6 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { sendSpouseInvitationMail } from '../services/EmailManager';
 import { dec, enc } from '../utils/commonFunctions';
 import { TaxfileStatus } from '../entites/TaxfileStatus';
+import { PaymentOrder } from '../entites/PaymentOrders';
 
 
 
@@ -1109,3 +1110,21 @@ const unlinkSingleFile = (filename: any = null) => {
     }
   }
 }
+
+
+export const getPaymentOrderResponse = async (req: Request, res: Response) => {
+  try {
+    const {order_uid} = req?.params;
+
+    if(!order_uid){
+        return sendError(res, "Please provide uid");
+    }
+
+    const repo = AppDataSource.getRepository(PaymentOrder);
+    const orderResponse = await repo.findOne({ where: { uid: order_uid } });
+    
+      return sendSuccess(res, "Success", {order:orderResponse}, 200);
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};

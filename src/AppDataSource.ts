@@ -11,6 +11,7 @@ export const AppDataSource = new DataSource({
     password: `${process.env.DB_PASSWORD}`,
     database: `${process.env.DB_DATABASE}`,
     // logging: true,
+    synchronize:true,
     entities: [
         join(__dirname, 'entites/*.{ts,js}'),
     ],

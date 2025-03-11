@@ -5,5 +5,5 @@ package-lock.json
 .vercel
 env.config
 storage
+.env*
 .env
-
