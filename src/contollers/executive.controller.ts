@@ -25,6 +25,7 @@ import { sendEmailNotifyClientNewMessages, sendForgetPasswordOtp, sendPaymentLin
 import Stripe from "stripe";
 import { PaymentOrder } from '../entites/PaymentOrders';
 import { title } from 'process';
+import { TaxfileComments } from '../entites/TaxfileComments';
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -578,6 +579,9 @@ export const taxfileDetail = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Documents not found' });
     }
 
+    const commentRepo = AppDataSource.getRepository(TaxfileComments);
+    const comments = await commentRepo.find({ where: { taxfile_id: id, is_deleted: false }});
+    
     const base_url = process.env.BASE_URL;
 
     const direct_deposit_cra = taxfile.direct_deposit_cra;
@@ -588,7 +592,7 @@ export const taxfileDetail = async (req: Request, res: Response) => {
       full_path: `${base_url}/storage/documents/${doc.filename}`
     }));
 
-    let taxfileMod = { ...taxfile, file_status_name: file_status_name, documents: documentsWithPath, profile: profile };
+    let taxfileMod = { ...taxfile, file_status_name: file_status_name, documents: documentsWithPath, profile: profile,comments };
 
     (taxfileMod as any).showSingleDocument = false;
     if (direct_deposit_cra == "YES") {
@@ -1229,3 +1233,69 @@ export const refreshPaymentOrderStatus = async (req: Request, res: Response) => 
   }
 };
 
+export const taxfileAddComments = async (req: Request, res: Response) => {
+  const { comment } = req.body;
+  const { id } = req.params;
+  if (!comment || comment.length < 1) {
+    return sendError(res, "Please provide comment");
+  }
+
+  const parsedId = parseInt(id);
+  if(isNaN(parsedId)){
+    return sendError(res, "Please provide valid file id");
+  }
+
+  if(comment.length > 1000) {
+    return sendError(res, "Comment can't be longer than 500 characters");
+  }
+
+  try {
+    const execId = req?.execId;
+
+    const taxfileRepo = AppDataSource.getRepository(Taxfile);
+    const taxfile = await taxfileRepo.findOne({ where: { id: parsedId } });
+    if (!taxfile) {
+      return sendError(res, "Taxfile Not Found");
+    }
+
+
+    const commentRepo = AppDataSource.getRepository(TaxfileComments);
+    const newComment = new TaxfileComments();
+    newComment.comment = comment;
+    newComment.taxfile_id = parsedId;
+    newComment.added_by = execId;
+    newComment.added_on = new Date();
+    await commentRepo.save(newComment);
+    return sendSuccess(res, 'Success', { taxfile });
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+export const taxfileDeleteComment = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const parsedId = parseInt(id);
+  if(isNaN(parsedId)){
+    return sendError(res, "Please provide valid delete id");
+  }
+
+  try {
+    const execId = req?.execId;
+
+    const commentRepo = AppDataSource.getRepository(TaxfileComments);
+    const comment = await commentRepo.findOne({ where: { id: parsedId,is_deleted:false } });
+    if (!comment) {
+      return sendError(res, "Comment Not Found");
+    }
+
+    comment.deleted_by = execId;
+    comment.deleted_on = new Date();
+    comment.is_deleted =true;
+    await commentRepo.save(comment);
+    return sendSuccess(res, 'Deleted Successfully');
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};

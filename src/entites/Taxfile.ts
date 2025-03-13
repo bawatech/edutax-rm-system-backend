@@ -7,6 +7,7 @@ import { Provinces } from "./Provinces";
 import { User } from "./User";
 import { Profile } from "./Profile";
 import { PaymentOrder } from "./PaymentOrders";
+import { TaxfileComments } from "./TaxfileComments";
 
 @Entity()
 export class Taxfile {
@@ -125,6 +126,8 @@ export class Taxfile {
     // @JoinColumn({ name: 'profile_id_fk' })
     // profile_detail: Profile
 
+    @OneToMany(() => TaxfileComments, (taxfileComments) => taxfileComments.taxfile)
+    comments: TaxfileComments
 
     
 }

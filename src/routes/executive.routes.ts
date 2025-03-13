@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount, logout, addExecutiveMsg, getExecutiveMsg, userMsgListCount, updateTaxfileExecutive, createPaymentRequest, verifyPaymentOrder, refreshPaymentOrderStatus } from "../contollers/executive.controller";
+import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount, logout, addExecutiveMsg, getExecutiveMsg, userMsgListCount, updateTaxfileExecutive, createPaymentRequest, verifyPaymentOrder, refreshPaymentOrderStatus, taxfileAddComments, taxfileDeleteComment } from "../contollers/executive.controller";
 import { executiveAuth } from "../middlewares/executiveAuth";
 import { isAdmin } from "../middlewares/isAdmin";
 
@@ -71,7 +71,10 @@ router.route("/message").get(executiveAuth, userMsgListCount);
 
 
 router.route("/taxfile").get(executiveAuth, taxfilesList);
+router.route("/taxfile/comment/:id").delete(executiveAuth, taxfileDeleteComment);
+router.route("/taxfile/:id/add-comment").post(executiveAuth, taxfileAddComments);
 router.route("/taxfile/:id").get(executiveAuth, taxfileDetail);
+
 router.put("/taxfile", executiveAuth, upload.any(), updateTaxfileExecutive);
 
 
