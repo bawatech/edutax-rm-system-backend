@@ -6,20 +6,23 @@ export class PaymentOrder {
     @PrimaryGeneratedColumn()
     id: number;
 
-
     @Column({nullable:false,default:null})
     uid: string;
 
+    @Column({type:'enum', enum:['TAXFILE','NRC']})
+    category:string
 
-    @Column({ nullable: true })
+    @Column({ nullable: true,default:null })
     taxfile_id: number;
 
     @Column('decimal', { precision: 10, scale: 2 })
     amount: string; 
-
     
     @Column({ nullable: true, type: "text" })
     title: string;
+
+    @Column({ nullable: true, type: "text" })
+    customer_email: string;
 
     @Column({type:'enum', enum:['Pending','Paid','Cancelled','Declined','Verified']})
     payment_status:string
@@ -57,6 +60,5 @@ export class PaymentOrder {
     @ManyToOne(()=>Taxfile, (taxfile)=>taxfile.payment_orders)
     @JoinColumn({name:'taxfile_id'})
     taxfile:Taxfile
-
 
 }

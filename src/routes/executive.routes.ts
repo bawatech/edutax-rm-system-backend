@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount, logout, addExecutiveMsg, getExecutiveMsg, userMsgListCount, updateTaxfileExecutive, createPaymentRequest, verifyPaymentOrder, refreshPaymentOrderStatus, taxfileAddComments, taxfileDeleteComment } from "../contollers/executive.controller";
+import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount, logout, addExecutiveMsg, getExecutiveMsg, userMsgListCount, updateTaxfileExecutive, createPaymentRequest, verifyPaymentOrder, refreshPaymentOrderStatus, taxfileAddComments, taxfileDeleteComment, createNrcPaymentRequest, NrcPayementRequests } from "../contollers/executive.controller";
 import { executiveAuth } from "../middlewares/executiveAuth";
 import { isAdmin } from "../middlewares/isAdmin";
 
@@ -89,6 +89,8 @@ router.route("/template").get(executiveAuth, templatesList);
 
 
 router.route("/payment/create-request").post(executiveAuth, isAdmin, createPaymentRequest);
+router.route("/payment/nrc-request").get(executiveAuth, isAdmin, NrcPayementRequests);
+router.route("/payment/create-nrc-request").post(executiveAuth, isAdmin, createNrcPaymentRequest);
 router.route("/payment/verify-order/:order_id").post(executiveAuth, isAdmin, verifyPaymentOrder);
 router.route("/payment/refresh-order-status/:order_id").post(executiveAuth, isAdmin, refreshPaymentOrderStatus);
 

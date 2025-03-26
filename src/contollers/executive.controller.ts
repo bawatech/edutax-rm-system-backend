@@ -1095,6 +1095,7 @@ export const createPaymentRequest = async (req: Request, res: Response) => {
     order.uid = uuid;
     order.taxfile_id = taxfile_id
     order.title = title,
+    order.category = 'TAXFILE';
     order.added_by = req?.execId;
     order.added_on = new Date();
       order.payment_status = 'Pending'
@@ -1295,6 +1296,110 @@ export const taxfileDeleteComment = async (req: Request, res: Response) => {
     comment.is_deleted =true;
     await commentRepo.save(comment);
     return sendSuccess(res, 'Deleted Successfully');
+  } catch (e) {
+    return handleCatch(res, e);
+  }
+};
+
+
+export const createNrcPaymentRequest = async (req: Request, res: Response) => {
+  const { email, amount, title } = req.body;
+  try {
+    if (!email) {
+      return sendError(res, "Email is required");
+    }
+
+    if (!title || title?.trim()?.length < 1) {
+      return sendError(res, "Title is required");
+    }
+
+    let formattedAmount = '0.00'
+
+    if (amount) {
+      let numericAmount = parseFloat(amount)
+
+      if (isNaN(numericAmount)) {
+        return sendError(res, "Invalid amount")
+      }
+
+      formattedAmount = numericAmount.toFixed(2);
+
+    } else {
+      return sendError(res, "Amount is required");
+    }
+
+    // Genereate Order
+    const uuid = uuidv4();
+    const orderRepo = AppDataSource.getRepository(PaymentOrder)
+    const order = new PaymentOrder;
+    order.amount = formattedAmount;
+    order.uid = uuid;
+    order.category = 'NRC';
+    order.customer_email = enc(email);
+    order.title = title,
+    order.added_by = req?.execId;
+    order.added_on = new Date();
+    order.payment_status = 'Pending'
+
+      
+      // order.payment_url= 'http://localhost:3000/payment/result'; // to be remvoved
+      // order.session_id= 'abdclldfds'; // to be remvoved
+    const newOrder = await orderRepo.save(order)
+
+    const paymentSession = await getPaymentLink(parseFloat(formattedAmount), title, newOrder?.id,uuid);
+
+    if (!paymentSession) {
+      return sendError(res, "Unable to generate payment links")
+    }
+    newOrder.payment_url= paymentSession?.url;
+    newOrder.session_id= paymentSession?.id;
+
+    const newOrderUpdated = await orderRepo.save(newOrder)
+
+    const savedOrder = await orderRepo.findOne(
+      {
+        where:{
+          id:newOrder?.id
+        }
+      }
+    )
+
+    sendPaymentLink(dec(savedOrder?.customer_email),{
+      name: null,
+      title: order?.title || 'Invoice',
+      amount:order?.amount,
+      payment_url:order?.payment_url
+    })
+
+    res.status(201).json({
+      message: 'Payment requested created successfully', response: {
+        order:newOrderUpdated
+      }
+    });
+
+
+  } catch (e) {
+    console.log('EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEee',e)
+    return handleCatch(res, e);
+  }
+};
+
+
+export const NrcPayementRequests = async (req: Request, res: Response) => {
+  try {
+    const repo = AppDataSource.getRepository(PaymentOrder);
+
+    const listRaw = await repo.find({where:{
+      category:'NRC'
+    }});
+
+    const list = listRaw.map(itm=>{
+      itm.customer_email = dec(itm?.customer_email)
+      return itm;
+    })
+
+    
+    return sendSuccess(res, "List Fetched Successfully", { list }, 200);
   } catch (e) {
     return handleCatch(res, e);
   }
