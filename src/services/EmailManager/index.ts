@@ -124,17 +124,6 @@ export const sendPaymentLink = async (to: string,data:{
 }
 
 
-
-
-// Create a transporter object using SMTP or other transport methods
-// const transporter = nodemailer.createTransport({
-//   host: "smtp.office365.com",
-//   port: 587,
-//   auth: {
-//     user: "contact@edutax.ca",
-//     pass: "370980Aa@", 
-//   }
-// });
 const transporter = nodemailer.createTransport({
   service: "Gmail", // Replace with your email service (e.g., 'Gmail', 'Outlook')
   auth: {
