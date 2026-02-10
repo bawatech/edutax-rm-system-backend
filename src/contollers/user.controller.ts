@@ -194,7 +194,7 @@ export const addTaxfile = async (req: Request, res: Response) => {
     // taxfile.province = profile.province;
     // taxfile.postal_code = profile.postal_code;
     // taxfile.mobile_number = profile.mobile_number;
-    taxfile.tax_year = '2024';
+    taxfile.tax_year = '2025';
     taxfile.taxfile_province = taxfile_province;
     taxfile.moved_to_canada = moved_to_canada;
     if (moved_to_canada == "YES") {
@@ -653,7 +653,7 @@ export const userTaxFileList = async (req: Request, res: Response) => {
 
     const taxRepo = AppDataSource.getRepository(Taxfile);
     const taxfiles = await taxRepo.find({
-      where: { user_id: userId,tax_year:'2024' }, 
+      where: { user_id: userId,tax_year:'2025' }, 
       relations: ['marital_status_detail', 'province_detail', 'user_detail'], 
       select: {
         user_detail: {
