@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount, logout, addExecutiveMsg, getExecutiveMsg, userMsgListCount, updateTaxfileExecutive } from "../contollers/executive.controller";
+import { login, addExecutive, updateTaxfileStatus, addExecutiveMessage, getExecutiveMessages, taxfilesList, taxfileDetail, forgotPassword, newPassword, updatePassword, executivesList, updateExecutiveStatus, addTemplate, templatesList, getTaxfileStatus, taxfilesListWithCount, logout, addExecutiveMsg, getExecutiveMsg, userMsgListCount, updateTaxfileExecutive, createPaymentRequest, verifyPaymentOrder, refreshPaymentOrderStatus, taxfileAddComments, taxfileDeleteComment, createNrcPaymentRequest, NrcPayementRequests } from "../contollers/executive.controller";
 import { executiveAuth } from "../middlewares/executiveAuth";
 import { isAdmin } from "../middlewares/isAdmin";
 
@@ -71,7 +71,10 @@ router.route("/message").get(executiveAuth, userMsgListCount);
 
 
 router.route("/taxfile").get(executiveAuth, taxfilesList);
+router.route("/taxfile/comment/:id").delete(executiveAuth, taxfileDeleteComment);
+router.route("/taxfile/:id/add-comment").post(executiveAuth, taxfileAddComments);
 router.route("/taxfile/:id").get(executiveAuth, taxfileDetail);
+
 router.put("/taxfile", executiveAuth, upload.any(), updateTaxfileExecutive);
 
 
@@ -85,7 +88,11 @@ router.route("/template").post(executiveAuth, isAdmin, addTemplate);
 router.route("/template").get(executiveAuth, templatesList);
 
 
-
+router.route("/payment/create-request").post(executiveAuth, isAdmin, createPaymentRequest);
+router.route("/payment/nrc-request").get(executiveAuth, isAdmin, NrcPayementRequests);
+router.route("/payment/create-nrc-request").post(executiveAuth, isAdmin, createNrcPaymentRequest);
+router.route("/payment/verify-order/:order_id").post(executiveAuth, isAdmin, verifyPaymentOrder);
+router.route("/payment/refresh-order-status/:order_id").post(executiveAuth, isAdmin, refreshPaymentOrderStatus);
 
 
 export default router

@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, BeforeInsert, BeforeUpdate, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { IsAlphanumeric, IsPostalCode, Matches, MaxLength, IsOptional } from "class-validator";
 // import { isValidPhoneNumber } from 'libphonenumber-js';
 import { IsMaritalStatus } from "./dataValidations/IsMaritalStatus";
@@ -6,6 +6,8 @@ import { MaritalStatus } from "./MaritalStatus";
 import { Provinces } from "./Provinces";
 import { User } from "./User";
 import { Profile } from "./Profile";
+import { PaymentOrder } from "./PaymentOrders";
+import { TaxfileComments } from "./TaxfileComments";
 
 @Entity()
 export class Taxfile {
@@ -111,6 +113,10 @@ export class Taxfile {
     @JoinColumn({ name: 'province' })
     province_detail: Provinces
 
+
+    @OneToMany(() => PaymentOrder, (order) => order.taxfile)
+    payment_orders: PaymentOrder
+
     @ManyToOne(() => User, (user) => user.taxfiles)
     @JoinColumn({ name: 'user_id' })
     user_detail: User
@@ -120,6 +126,8 @@ export class Taxfile {
     // @JoinColumn({ name: 'profile_id_fk' })
     // profile_detail: Profile
 
+    @OneToMany(() => TaxfileComments, (taxfileComments) => taxfileComments.taxfile)
+    comments: TaxfileComments
 
     
 }

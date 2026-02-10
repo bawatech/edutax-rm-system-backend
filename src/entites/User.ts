@@ -1,10 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, EventSubscriber, LoadEvent, InsertEvent, UpdateEvent } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, EventSubscriber, LoadEvent, InsertEvent, UpdateEvent, OneToOne } from "typeorm";
 import { IsEmail } from "class-validator";
 import { IsUniqueUser } from "./dataValidations/IsUniqeUser";
 import { IsStrongPassword } from "./dataValidations/strongPassword";
 import { Messages } from "./messages";
 import { Taxfile } from "./Taxfile";
 import CryptoJS from 'crypto-js';
+import { Profile } from "./Profile";
 
 @Entity()
 export class User {
@@ -80,6 +81,9 @@ export class User {
 
     @OneToMany(() => Taxfile, (taxfile) => taxfile.user_detail)
     taxfiles: Taxfile[]
+
+    @OneToOne(() => Profile, (profile) => profile.user)
+    profile: Profile
 
 
 
